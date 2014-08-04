@@ -1,0 +1,5 @@
+#screen {
+    cursor: url('/res/whitepointer.png'), auto;
+    float: left;
+    border: 1px solid black;
+}
