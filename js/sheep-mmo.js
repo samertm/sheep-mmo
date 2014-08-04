@@ -8,8 +8,20 @@ var host = "localhost";
 var port = "4977";
 var ip = scheme + host + ":" + port;
 
-var canvas = $('#screen').width(board_width * offset).height(board_height * offset);
+var canvas = $('#screen')
+canvas[0].width = board_width * offset;
+canvas[0].height = board_height * offset;
 var ctx = canvas[0].getContext("2d");
+
+var images = {
+    "sheep": function() {
+        var i = new Image();
+        i.src = "/res/sheep.png"
+        i.height = 40;
+        i.width = 38;
+        return i;
+    }()
+}
 
 window.onload = function() {
     if (!window["WebSocket"]) {
@@ -17,10 +29,53 @@ window.onload = function() {
         return;
     }
 
-    var conn = new Conn(ip);
+    var conn = new Conn(ip, $(canvas)[0]);
     $(canvas).on("mousemove", function(evt) {
-        sendMouseMove(evt, $(canvas)[0], conn);
+        sendMouseMove(evt, ctx, conn);
     });
+}
+
+function decode(data) {
+    var result = [];
+    var state = "out";
+    for (var i = 0; i < data.length; i++) {
+        switch (state) {
+        case "out":
+            if (data[i] == "(") {
+                var databuffer = [];
+                var stringbuffer = "";
+                state = "in-message";
+                continue;
+            }
+            break;
+        case "in-message":
+            if (data[i] == ")") {
+                databuffer.push(stringbuffer);
+                result.push(databuffer);
+                state = "out"
+                continue;
+            }
+            if (data[i] == " ") {
+                databuffer.push(stringbuffer);
+                stringbuffer = "";
+                continue;
+            }
+            stringbuffer += data[i]
+            break;
+        }
+    }
+    return result
+}
+
+function processMessages(msgs) {
+    ctx.clearRect(0, 0, $(canvas).width, $(canvas).height);
+    for (var i = 0; i < msgs.length; i++) {
+        msg = msgs[i];
+        if (msg[0] == "sheep") {
+            console.log(parseInt(msg[1]))
+            ctx.drawImage(images["sheep"], parseInt(msg[1]), parseInt(msg[2]));
+        }
+    }
 }
 
 function Conn(ip) {
@@ -30,8 +85,7 @@ function Conn(ip) {
     }
     c.onmessage = function(evt) {
         var msgs = decode(evt.data)
-        
-        //console.log(evt.data)
+        processMessages(msgs)
     }
     return c
 }
@@ -44,7 +98,9 @@ function getMousePos(canvas, evt) {
     };
 }
 
-function sendMouseMove(evt, canvas, conn) {
-    var pos = getMousePos(canvas, evt);
-    conn.send("(mouse " + pos.x + " " + pos.y + ")")
+function sendMouseMove(evt, ctx, conn) {
+    var pos = getMousePos(ctx.canvas, evt);
+    if (conn.readyState == conn.OPEN) {
+        conn.send("(mouse " + pos.x + " " + pos.y + ")")
+    }
 }

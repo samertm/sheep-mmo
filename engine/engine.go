@@ -21,8 +21,8 @@ type board struct {
 const (
 	SheepHeight = 40
 	SheepWidth  = 38
-	BoardHeight = 768
-	BoardWidth  = 512
+	BoardHeight = 512
+	BoardWidth  = 768
 )
 
 func newBoard() *board {
