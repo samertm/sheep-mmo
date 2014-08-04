@@ -68,7 +68,7 @@ function decode(data) {
 }
 
 function processMessages(msgs) {
-    ctx.clearRect(0, 0, $(canvas).width, $(canvas).height);
+    ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         if (msg[0] == "sheep") {

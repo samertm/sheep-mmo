@@ -50,9 +50,11 @@ func newSheep() *Sheep {
 }
 
 func (s *Sheep) walk() {
-	s.X = rand.Intn(BoardWidth - SheepWidth)
-	s.Y = rand.Intn(BoardHeight - SheepHeight)
-	
+	if (rand.Intn(15) == 0) {
+		step := 20
+		s.X += rand.Intn(2 * step) - step
+		s.Y += rand.Intn(2 * step) - step
+	}
 }
 
 func (s *Sheep) Data() []byte {

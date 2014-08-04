@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"time"
 
 	"github.com/samertm/sheep-mmo/engine"
@@ -36,7 +35,7 @@ func (h *hub) run() {
 			delete(h.clients, c)
 			close(c.send)
 		case cMsg := <-h.update: // recieves clientMsg
-			log.Println(string(cMsg.msg))
+			//log.Println(string(cMsg.msg))
 		case <-h.tick:
 			if len(h.clients) != 0 {
 				go func() {
