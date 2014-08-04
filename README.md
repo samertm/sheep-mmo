@@ -5,7 +5,7 @@ Feed a sheep, rule the world.
 ````
       message ::== "(" <message-part> ")"
  message-part ::== <mouse-message>
-                | <sheep-message>
+                 | <sheep-message>
 mouse-message ::== "mouse" xcoord ycoord
 sheep-message ::== "sheep" xcoord ycoord
 ````
