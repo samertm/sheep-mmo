@@ -72,7 +72,6 @@ function processMessages(msgs) {
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         if (msg[0] == "sheep") {
-            console.log(parseInt(msg[1]))
             ctx.drawImage(images["sheep"], parseInt(msg[1]), parseInt(msg[2]));
         }
     }

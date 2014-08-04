@@ -34,7 +34,7 @@ func (h *hub) run() {
 		case c := <-h.unregister:
 			delete(h.clients, c)
 			close(c.send)
-		case cMsg := <-h.update: // recieves clientMsg
+		case /* cMsg := */ <-h.update: // recieves clientMsg
 			//log.Println(string(cMsg.msg))
 		case <-h.tick:
 			if len(h.clients) != 0 {
