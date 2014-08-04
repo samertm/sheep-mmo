@@ -4,13 +4,28 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+	"log"
 )
+
+var _ = log.Println // debugging
 
 type Sheep struct {
 	X, Y          int
+	ShowX, ShowY  int
 	DestX, DestY  int
 	Height, Width int
+	bounceHeight  int
+	bounceUp      bool
+	state         sheepState
 }
+
+type sheepState int
+
+const (
+	thinking sheepState = iota
+	startMoving
+	moving
+)
 
 type board struct {
 	// The top left corner of the board is (0, 0). Grows in both
@@ -43,25 +58,48 @@ func init() {
 
 func newSheep() *Sheep {
 	s := &Sheep{
-		X:      rand.Intn(BoardWidth - SheepWidth),
-		Y:      rand.Intn(BoardHeight - SheepHeight),
-		Height: SheepHeight,
-		Width:  SheepWidth,
+		X:        rand.Intn(BoardWidth - SheepWidth),
+		Y:        rand.Intn(BoardHeight - SheepHeight),
+		Height:   SheepHeight,
+		Width:    SheepWidth,
+		bounceUp: true,
+		state: thinking,
 	}
 	s.DestX = s.X
 	s.DestY = s.Y
+	s.ShowX = s.X
+	s.ShowY = s.Y
 	return s
 }
 
+// TODO: finishMoving state, to end a bounce cleanly.
 func (s *Sheep) action() {
-	if rand.Intn(15) == 0 {
+	switch(s.state) {
+	case thinking:
+		//log.Println("thinking")
+		if rand.Intn(25) == 0 {
+			s.state = startMoving
+		}
+	case startMoving:
+		//log.Println("start")
 		s.pickDestination()
+		s.state = moving
+	case moving:
+		//log.Println("moving")
+		if s.arrived() {
+			s.state = thinking
+			return
+		}
+		s.walk()
 	}
-	s.walk()
+}
+
+func (s Sheep) arrived() bool {
+	return s.X == s.DestX && s.Y == s.DestY
 }
 
 func (s *Sheep) pickDestination() {
-	step := 100
+	step := 75
 	s.DestX += rand.Intn(2*step) - step
 	s.DestY += rand.Intn(2*step) - step
 	s.correctBounds()
@@ -107,13 +145,16 @@ func moveTowards(pos, dest, step int) int {
 }
 
 func (s *Sheep) walk() {
-	step := 10
+	step := 5
 	s.X = moveTowards(s.X, s.DestX, step)
 	s.Y = moveTowards(s.Y, s.DestY, step)
+	s.ShowX = s.X
+	s.ShowY = s.Y
 }
 
-func (s *Sheep) Data() []byte {
-	return []byte("(sheep " + strconv.Itoa(s.X) + " " + strconv.Itoa(s.Y) + ")")
+func (s Sheep) Data() []byte {
+	return []byte("(sheep " + strconv.Itoa(s.ShowX) + " " +
+		strconv.Itoa(s.ShowY) + ")")
 }
 
 func CreateSendData() []byte {
