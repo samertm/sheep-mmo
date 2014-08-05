@@ -15,6 +15,8 @@ var ctx = canvas[0].getContext("2d");
 
 // All sheep currently active
 var activeSheep = [];
+// All other players' mouse positions
+var activeMice = [];
 // Global message to show on the canvas
 var message = "";
 
