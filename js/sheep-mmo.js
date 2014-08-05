@@ -19,6 +19,7 @@ var activeSheep = [];
 var activeMice = [];
 // Global message to show on the canvas
 var message = "";
+var serverMessages = [];
 
 var images = {
     "sheep": function() {
@@ -26,6 +27,13 @@ var images = {
         i.src = "/res/sheep.png"
         i.height = 40;
         i.width = 38;
+        return i;
+    }(),
+    "mouse": function() {
+        var i = new Image();
+        i.src = "/res/purplepointer.png"
+        i.height = 24;
+        i.width = 24;
         return i;
     }()
 }
@@ -43,6 +51,7 @@ window.onload = function() {
     $(canvas).click(function(evt) {
         processMouseClick(evt, activeSheep, ctx, conn);
     });
+    window.setInterval(loop, 30);
 }
 
 function processMouseClick(evt, activeSheep, ctx, conn) {
@@ -129,15 +138,29 @@ function processMessages(msgs) {
     activeSheep = [];
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
-        if (msg[0] == "sheep") {
+        switch (msg[0]) {
+        case "sheep":
             activeSheep.push(msg);
             ctx.drawImage(images["sheep"], parseInt(msg[2]), parseInt(msg[3]));
+            break;
+        // case "mouse":
+        //     ctx.drawImage(images["mouse"], parseInt(msg[1]), parseInt(msg[2]));
+        //     break;
         }
     }
     if (message != "") {
         ctx.fillStyle = "black";
         ctx.font = "bold 16px Arial";
         ctx.fillText(message, 10, 20);
+    }
+    
+}
+
+function loop() {
+    processMessages(serverMessages);
+    // Preserve last message
+    if (serverMessages.length > 0) {
+        serverMessages = [serverMessages[serverMessages.length - 1]];
     }
 }
 
@@ -148,7 +171,9 @@ function Conn(ip) {
     }
     c.onmessage = function(evt) {
         var msgs = decode(evt.data)
-        processMessages(msgs)
+        for (i = 0; i < msgs.length; i++) {
+            serverMessages.push(msgs[i])
+        }
     }
     // Only sends a message if the connection is open.
     c.sendCheck = function(msg) {
