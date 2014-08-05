@@ -12,17 +12,38 @@ type M interface {
 	Client() *client.C
 }
 
-type Mouse struct {
+var mouseIds map[*client.C]int
+var maxMouseId int
+
+func init() {
+	mouseIds = make(map[*client.C]int)
+}
+
+type mouse struct {
+	id   int
 	c    *client.C
 	x, y int
 }
 
-func (c Mouse) Data() []byte {
-	return []byte("(mouse " + strconv.Itoa(c.x) + " " + strconv.Itoa(c.y) + ")")
+func NewMouse(c *client.C, x, y int) mouse {
+	var id int
+	if i, ok := mouseIds[c]; ok {
+		id = i
+	} else {
+		id = maxMouseId
+		mouseIds[c] = id
+		maxMouseId++
+	}
+	return mouse{id: id, c: c, x: x, y: y}
 }
 
-func (c Mouse) Client() *client.C {
-	return c.c
+func (m mouse) Data() []byte {
+	return []byte("(mouse " + strconv.Itoa(m.id) + " " +
+		strconv.Itoa(m.x) + " " + strconv.Itoa(m.y) + ")")
+}
+
+func (m mouse) Client() *client.C {
+	return m.c
 }
 
 func Decode(c *client.C, msg []byte) []M {
@@ -63,14 +84,14 @@ func beg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	msgType := string(msg[0:i])
 	switch msgType {
 	case "mouse":
-		return mouse, c, msg[i+1:] // i+1 skips the space
+		return mouseMsg, c, msg[i+1:] // i+1 skips the space
 	default:
 		return nil, nil, nil
 	}
 }
 
 // msg is in the form "\d+ \d+)"
-func mouse(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
+func mouseMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	var i int
 	for ; i < len(msg) && msg[i] != ' '; i++ {
 		// For loop left intentionally blank.
@@ -92,6 +113,6 @@ func mouse(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 		log.Println("errored on: " + string(msg))
 		return nil, nil, nil
 	}
-	ch <- Mouse{c: c, x: x, y: y}
+	ch <- NewMouse(c, x, y)
 	return start, c, msg[j+1:]
 }

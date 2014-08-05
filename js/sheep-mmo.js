@@ -159,9 +159,22 @@ function processMessages(msgs) {
 function loop() {
     processMessages(serverMessages);
     // Preserve last message
-    if (serverMessages.length > 0) {
-        serverMessages = [serverMessages[serverMessages.length - 1]];
+    serverMessages = getLast(serverMessages)
+}
+
+// Does not modify msgs.
+function getLast(msgs) {
+    var clone = msgs.slice(0);
+    var result = [];
+    var check = {};
+    for (var i = clone.length - 1; i >= 0; i--) {
+        var id = clone[i][0].concat(clone[i][1]);
+        if (check[id] !== true) {
+            check[id] = true;
+            result.push(clone[i])
+        }
     }
+    return result
 }
 
 function Conn(ip) {
