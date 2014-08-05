@@ -149,7 +149,16 @@ func (s *Sheep) walk() {
 	s.X = moveTowards(s.X, s.DestX, step)
 	s.Y = moveTowards(s.Y, s.DestY, step)
 	s.ShowX = s.X
-	s.ShowY = s.Y
+	if s.bounceUp {
+		s.ShowY += 7
+	} else {
+		s.ShowY -= 7
+	}
+	if s.ShowY > s.Y + 10 {
+		s.bounceUp = false
+	} else if s.ShowY < s.Y {
+		s.bounceUp = true
+	}
 }
 
 func (s Sheep) Data() []byte {
