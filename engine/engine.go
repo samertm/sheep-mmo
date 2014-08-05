@@ -1,5 +1,10 @@
 package engine
 
+import (
+	"github.com/samertm/sheep-mmo/server/client"
+	"github.com/samertm/sheep-mmo/server/message"
+)
+
 type Actor interface {
 	Action()
 	Data() []byte
@@ -9,7 +14,7 @@ type board struct {
 	// The top left corner of the board is (0, 0). Grows in both
 	// directions.
 	Width, Height int
-	Actors         []Actor
+	Actors        []Actor
 }
 
 const (
@@ -21,7 +26,7 @@ func newBoard() *board {
 	return &board{
 		Width:  BoardWidth,
 		Height: BoardHeight,
-		Actors:  []Actor{newSheep()},
+		Actors: []Actor{newSheep()},
 	}
 }
 
@@ -31,12 +36,25 @@ func init() {
 	Board = newBoard()
 }
 
-func CreateSendData() []byte {
-	data := make([]byte, 0, 50)
+type mWrapper struct {
+	data []byte
+}
+
+func (m mWrapper) Data() []byte {
+	return m.data
+}
+
+func (m mWrapper) Client() *client.C {
+	return nil
+}
+
+// TODO: Rename to "Messages"?
+func CreateMessages() []message.M {
+	messages := make([]message.M, 0, len(Board.Actors))
 	for _, a := range Board.Actors {
-		data = append(data, a.Data()...)
+		messages = append(messages, mWrapper{data: a.Data()})
 	}
-	return data
+	return messages
 }
 
 func Tick() {

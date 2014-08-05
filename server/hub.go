@@ -1,27 +1,28 @@
 package server
 
 import (
-	"log"
 	"time"
 
 	"github.com/samertm/sheep-mmo/engine"
+	"github.com/samertm/sheep-mmo/server/client"
+	"github.com/samertm/sheep-mmo/server/message"
 )
 
 type hub struct {
-	clients    map[*client]int
-	broadcast  chan []byte
-	register   chan *client
-	unregister chan *client
-	update     chan *clientMsg
+	clients    map[*client.C]int
+	broadcast  chan message.M
+	register   chan *client.C
+	unregister chan *client.C
+	update     chan *client.CMsg
 	tick       <-chan time.Time
 }
 
 var h = hub{
-	clients:    make(map[*client]int),
-	broadcast:  make(chan []byte),
-	register:   make(chan *client),
-	unregister: make(chan *client),
-	update:     make(chan *clientMsg),
+	clients:    make(map[*client.C]int),
+	broadcast:  make(chan message.M),
+	register:   make(chan *client.C),
+	unregister: make(chan *client.C),
+	update:     make(chan *client.CMsg),
 	tick:       time.Tick(70 * time.Millisecond),
 }
 
@@ -34,23 +35,29 @@ func (h *hub) run() {
 			id++
 		case c := <-h.unregister:
 			delete(h.clients, c)
-			close(c.send)
+			close(c.Send)
 		case cMsg := <-h.update: // recieves clientMsg
-			msgs := decode(cMsg.c, cMsg.msg)
+			msgs := message.Decode(cMsg.C, cMsg.Msg)
 			for _, m := range msgs {
-				log.Println(string(m.Data()))
-			}
-			// do something with msgs
-		case <-h.tick:
-			if len(h.clients) != 0 {
 				go func() {
-					engine.Tick()
-					h.broadcast <- engine.CreateSendData()
+					h.broadcast <- m
 				}()
 			}
-		case d := <-h.broadcast:
+		case <-h.tick:
+			if len(h.clients) != 0 {
+				engine.Tick()
+				msgs := engine.CreateMessages()
+				for _, m := range msgs {
+					go func() {
+						h.broadcast <- m
+					}()
+				}
+			}
+		case m := <-h.broadcast:
 			for c := range h.clients {
-				c.send <- d
+				if c != m.Client() {
+					c.Send <- m.Data()
+				}
 			}
 		}
 	}

@@ -1,59 +1,61 @@
-package server
+package message
 
 import (
 	"log"
 	"strconv"
+
+	"github.com/samertm/sheep-mmo/server/client"
 )
 
-type Message interface {
+type M interface {
 	Data() []byte
-	Client() *client
+	Client() *client.C
 }
 
-type mouseMessage struct {
-	c    *client
+type Mouse struct {
+	c    *client.C
 	x, y int
 }
 
-func (c mouseMessage) Data() []byte {
+func (c Mouse) Data() []byte {
 	return []byte("(mouse " + strconv.Itoa(c.x) + " " + strconv.Itoa(c.y) + ")")
 }
 
-func (c mouseMessage) Client() *client {
+func (c Mouse) Client() *client.C {
 	return c.c
 }
 
-func decode(c *client, msg []byte) []Message {
-	messages := make([]Message, 0, 2)
-	ch := make(chan Message)
-	go decodeRun(ch, c, msg)
+func Decode(c *client.C, msg []byte) []M {
+	messages := make([]M, 0, 2)
+	ch := make(chan M)
+	go run(ch, c, msg)
 	for m := range ch {
 		messages = append(messages, m)
 	}
 	return messages
 }
 
-type stateFn func(chan Message, *client, []byte) stateFn
+type stateFn func(chan M, *client.C, []byte) (stateFn, *client.C, []byte)
 
-func decodeRun(ch chan Message, c *client, msg []byte) {
+func run(ch chan M, c *client.C, msg []byte) {
 	defer close(ch)
-	for state := decodeStart; state != nil; {
-		state = state(ch, c, msg)
+	for state := start; state != nil; {
+		state, c, msg = state(ch, c, msg)
 	}
 }
 
-func decodeStart(ch chan Message, c *client, msg []byte) stateFn {
+func start(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	if len(msg) == 0 {
-		return nil
+		return nil, nil, nil
 	}
 	if msg[0] == '(' {
-		return decodeBeg(ch, c, msg[1:])
+		return beg, c, msg[1:]
 	}
 	// Error condition.
-	return nil
+	return nil, nil, nil
 }
 
-func decodeBeg(ch chan Message, c *client, msg []byte) stateFn {
+func beg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	var i int
 	for ; i < len(msg) && msg[i] != ' '; i++ {
 		// For loop left intentionally blank.
@@ -61,14 +63,14 @@ func decodeBeg(ch chan Message, c *client, msg []byte) stateFn {
 	msgType := string(msg[0:i])
 	switch msgType {
 	case "mouse":
-		return decodeMouse(ch, c, msg[i+1:]) // i+1 skips the space
+		return mouse, c, msg[i+1:] // i+1 skips the space
 	default:
-		return nil
+		return nil, nil, nil
 	}
 }
 
 // msg is in the form "\d+ \d+)"
-func decodeMouse(ch chan Message, c *client, msg []byte) stateFn {
+func mouse(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	var i int
 	for ; i < len(msg) && msg[i] != ' '; i++ {
 		// For loop left intentionally blank.
@@ -77,7 +79,7 @@ func decodeMouse(ch chan Message, c *client, msg []byte) stateFn {
 	if err != nil {
 		// Error condition.
 		log.Println("errored on: " + string(msg))
-		return nil
+		return nil, nil, nil
 	}
 	i++ // To skip the space in msg
 	var j int
@@ -88,8 +90,8 @@ func decodeMouse(ch chan Message, c *client, msg []byte) stateFn {
 	if err != nil {
 		// Error condition.
 		log.Println("errored on: " + string(msg))
-		return nil
+		return nil, nil, nil
 	}
-	ch <- mouseMessage{c: c, x: x, y: y}
-	return decodeBeg
+	ch <- Mouse{c: c, x: x, y: y}
+	return start, c, msg[j+1:]
 }

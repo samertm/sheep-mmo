@@ -1,4 +1,4 @@
-package server
+package client
 
 import (
 	"time"
@@ -6,12 +6,24 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func (c *client) write(messageType int, payload []byte) error {
+const (
+	writeWait = 10 * time.Second
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
+)
+
+func (c *C) write(messageType int, payload []byte) error {
 	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.ws.WriteMessage(messageType, payload)
 }
 
-func (c *client) writePump() {
+func (c *C) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -19,7 +31,7 @@ func (c *client) writePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-c.Send:
 			if !ok {
 				c.write(websocket.CloseMessage, []byte{})
 				return
@@ -36,9 +48,9 @@ func (c *client) writePump() {
 }
 
 // readPump pumps messages from the websocket connection to the hub.
-func (c *client) readPump() {
+func (c *C) ReadPump(unregister chan *C, update chan *CMsg) {
 	defer func() {
-		h.unregister <- c
+		unregister <- c
 		c.ws.Close()
 	}()
 	c.ws.SetReadLimit(maxMessageSize)
@@ -52,23 +64,23 @@ func (c *client) readPump() {
 		if err != nil {
 			break
 		}
-		h.update <- &clientMsg{c: c, msg: message}
+		update <- &CMsg{C: c, Msg: message}
 	}
 }
 
-func newClient(ws *websocket.Conn) *client {
-	return &client{
-		ws:            ws,
-		send:          make(chan []byte, 256),
+func New(ws *websocket.Conn) *C {
+	return &C{
+		ws:   ws,
+		Send: make(chan []byte, 256),
 	}
 }
 
-type clientMsg struct {
-	c   *client
-	msg []byte
+type CMsg struct {
+	C   *C
+	Msg []byte
 }
 
-type client struct {
+type C struct {
 	ws   *websocket.Conn
-	send chan []byte
+	Send chan []byte
 }
