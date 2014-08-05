@@ -143,9 +143,10 @@ function processMessages(msgs) {
             activeSheep.push(msg);
             ctx.drawImage(images["sheep"], parseInt(msg[2]), parseInt(msg[3]));
             break;
-        // case "mouse":
-        //     ctx.drawImage(images["mouse"], parseInt(msg[1]), parseInt(msg[2]));
-        //     break;
+        case "mouse":
+            console.log(msg);
+            ctx.drawImage(images["mouse"], parseInt(msg[2]), parseInt(msg[3]));
+            break;
         }
     }
     if (message != "") {
@@ -153,7 +154,6 @@ function processMessages(msgs) {
         ctx.font = "bold 16px Arial";
         ctx.fillText(message, 10, 20);
     }
-    
 }
 
 function loop() {
