@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-
-
 type Sheep struct {
 	id            int
 	X, Y          int
@@ -40,7 +38,7 @@ var sheepId int
 
 func newSheep() *Sheep {
 	s := &Sheep{
-		id: sheepId,
+		id:       sheepId,
 		X:        rand.Intn(BoardWidth - SheepWidth),
 		Y:        rand.Intn(BoardHeight - SheepHeight),
 		Height:   SheepHeight,
@@ -146,6 +144,6 @@ func (s *Sheep) walk() {
 }
 
 func (s Sheep) Data() []byte {
-	return []byte("(sheep " + strconv.Iota(s.id) + " " +
+	return []byte("(sheep " + strconv.Itoa(s.id) + " " +
 		strconv.Itoa(s.ShowX) + " " + strconv.Itoa(s.ShowY) + ")")
 }
