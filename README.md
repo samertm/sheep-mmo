@@ -11,3 +11,7 @@ Feed a sheep, rule the world.
 id, xcoord, ycoord ::== non-negative integer
 ````
 
+Server-to-client messages: sheep-message
+
+Client-to-server messages: mouse-message
+

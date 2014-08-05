@@ -13,6 +13,11 @@ canvas[0].width = board_width * offset;
 canvas[0].height = board_height * offset;
 var ctx = canvas[0].getContext("2d");
 
+// All sheep currently active
+var activeSheep = [];
+// Global message to show on the canvas
+var message = "";
+
 var images = {
     "sheep": function() {
         var i = new Image();
@@ -33,6 +38,56 @@ window.onload = function() {
     $(canvas).on("mousemove", function(evt) {
         sendMouseMove(evt, ctx, conn);
     });
+    $(canvas).click(function(evt) {
+        processMouseClick(evt, activeSheep, ctx, conn);
+    });
+}
+
+function processMouseClick(evt, activeSheep, ctx, conn) {
+    //console.log("processMouseClick fired");
+    var pos = getMousePos(ctx.canvas, evt);
+    // just in case activeSheep gets clobbered in processMessages
+    // TODO: are functions atomic? Ask Mary.
+    var snapshot = activeSheep.slice(0);
+    var found = false;
+    for (var i = 0; i < snapshot.length; i++) {
+        if (snapshot[i][0] == "sheep") {
+            var sheepx = parseInt(snapshot[i][2]);
+            var sheepy = parseInt(snapshot[i][3]);
+            if (pos.x >= sheepx && pos.x < sheepx + images["sheep"].width &&
+                pos.y >= sheepy && pos.y < sheepy + images["sheep"].height) {
+                found = true;
+                // Pick the forward most sheep. If two sheep have the same
+                // y coordinate, pick the left most one.
+                if (typeof(foundSheepY) == "undefined") {
+                    var foundSheepY = sheepy;
+                    var foundSheepX = sheepx;
+                    var foundSheep = snapshot[i];
+                } else if (foundSheepY < sheepy) {
+                    foundSheepY = sheepy;
+                    foundSheepX = sheepx;
+                    foundSheep = snapshot[i];
+                } else if (foundSheepY == sheepy && foundSheepX > sheepx) {
+                    foundSheepY = sheepy;
+                    foundSheepX = sheepx;
+                    foundSheep = snapshot[i];
+                }
+            }
+        }
+    }
+    if (found) {
+        displayMessage("found one! id: " + foundSheep);
+    } else {
+        clearMessage();
+    }
+}
+
+function clearMessage() {
+    message = "";
+}
+
+function displayMessage(str) {
+    message = str;
 }
 
 function decode(data) {
@@ -69,11 +124,18 @@ function decode(data) {
 
 function processMessages(msgs) {
     ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
+    activeSheep = [];
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         if (msg[0] == "sheep") {
+            activeSheep.push(msg);
             ctx.drawImage(images["sheep"], parseInt(msg[2]), parseInt(msg[3]));
         }
+    }
+    if (message != "") {
+        ctx.fillStyle = "black";
+        ctx.font = "bold 16px Arial";
+        ctx.fillText(message, 10, 20);
     }
 }
 
@@ -85,6 +147,12 @@ function Conn(ip) {
     c.onmessage = function(evt) {
         var msgs = decode(evt.data)
         processMessages(msgs)
+    }
+    // Only sends a message if the connection is open.
+    c.sendCheck = function(msg) {
+        if (this.readyState == this.OPEN) {
+            this.send(msg)
+        }
     }
     return c
 }
@@ -99,7 +167,5 @@ function getMousePos(canvas, evt) {
 
 function sendMouseMove(evt, ctx, conn) {
     var pos = getMousePos(ctx.canvas, evt);
-    if (conn.readyState == conn.OPEN) {
-        conn.send("(mouse " + pos.x + " " + pos.y + ")")
-    }
+    conn.sendCheck("(mouse " + pos.x + " " + pos.y + ")")
 }
