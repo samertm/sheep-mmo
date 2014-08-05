@@ -200,12 +200,12 @@ function Conn(ip) {
 function getMousePos(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return {
-        x: evt.clientX - rect.left,
-        y: evt.clientY - rect.top
+        x: Math.floor(evt.clientX - rect.left),
+        y: Math.floor(evt.clientY - rect.top)
     };
 }
 
 function sendMouseMove(evt, ctx, conn) {
     var pos = getMousePos(ctx.canvas, evt);
-    conn.sendCheck("(mouse " + pos.x + " " + pos.y + ")")
+    conn.sendCheck("(mouse " + pos.x + " " + pos.y + ")");
 }
