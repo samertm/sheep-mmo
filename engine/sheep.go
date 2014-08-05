@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+
+
 type Sheep struct {
 	id            int
 	X, Y          int
@@ -34,8 +36,11 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+var sheepId int
+
 func newSheep() *Sheep {
 	s := &Sheep{
+		id: sheepId,
 		X:        rand.Intn(BoardWidth - SheepWidth),
 		Y:        rand.Intn(BoardHeight - SheepHeight),
 		Height:   SheepHeight,
@@ -43,6 +48,7 @@ func newSheep() *Sheep {
 		bounceUp: true,
 		state:    thinking,
 	}
+	sheepId++
 	s.DestX = s.X
 	s.DestY = s.Y
 	s.ShowX = s.X
@@ -140,6 +146,6 @@ func (s *Sheep) walk() {
 }
 
 func (s Sheep) Data() []byte {
-	return []byte("(sheep " + strconv.Itoa(s.ShowX) + " " +
-		strconv.Itoa(s.ShowY) + ")")
+	return []byte("(sheep " + strconv.Iota(s.id) + " " +
+		strconv.Itoa(s.ShowX) + " " + strconv.Itoa(s.ShowY) + ")")
 }

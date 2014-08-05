@@ -72,7 +72,7 @@ function processMessages(msgs) {
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         if (msg[0] == "sheep") {
-            ctx.drawImage(images["sheep"], parseInt(msg[1]), parseInt(msg[2]));
+            ctx.drawImage(images["sheep"], parseInt(msg[2]), parseInt(msg[3]));
         }
     }
 }
