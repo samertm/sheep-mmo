@@ -6,9 +6,9 @@ Feed a sheep, rule the world.
              message ::== "(" <message-part> ")"
         message-part ::== <mouse-message>
                         | <sheep-message>
-       mouse-message ::== "mouse" xcoord ycoord
-server-mouse-message ::== id xcoord ycoord
-       sheep-message ::== "sheep" id xcoord ycoord
+       mouse-message ::== "mouse " xcoord " " ycoord
+server-mouse-message ::== "mouse " id " " xcoord " " ycoord
+       sheep-message ::== "sheep " id " " xcoord " " ycoord
   id, xcoord, ycoord ::== non-negative integer
 ````
 
