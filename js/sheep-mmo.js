@@ -51,7 +51,7 @@ window.onload = function() {
     $(canvas).click(function(evt) {
         processMouseClick(evt, activeSheep, ctx, conn);
     });
-    window.setInterval(loop, 30);
+    window.setInterval(loop, 10);
 }
 
 function processMouseClick(evt, activeSheep, ctx, conn) {
