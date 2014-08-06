@@ -40,6 +40,11 @@ type mWrapper struct {
 	data []byte
 }
 
+// This should never be called. @_@
+func (m mWrapper) Type() string {
+	return "engine"
+}
+
 func (m mWrapper) Data() []byte {
 	return m.data
 }

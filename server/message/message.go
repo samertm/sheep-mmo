@@ -8,6 +8,7 @@ import (
 )
 
 type M interface {
+	Type() string
 	Data() []byte
 	Client() *client.C
 }
@@ -44,6 +45,10 @@ func (m mouse) Data() []byte {
 
 func (m mouse) Client() *client.C {
 	return m.c
+}
+
+func (m mouse) Type() string {
+	return "mouse"
 }
 
 func Decode(c *client.C, msg []byte) []M {

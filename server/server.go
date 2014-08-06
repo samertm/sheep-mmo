@@ -6,7 +6,23 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/samertm/sheep-mmo/server/client"
+	"github.com/samertm/sheep-mmo/server/message"
 )
+
+type data struct {
+	id   int
+	msgs map[string]message.M
+}
+
+func createMessages(cs map[*client.C]*data) []message.M {
+	msgs := make([]message.M, 0)
+	for _, d := range cs {
+		for _, m := range d.msgs {
+			msgs = append(msgs, m)
+		}
+	}
+	return msgs
+}
 
 func handleWs(w http.ResponseWriter, r *http.Request) {
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)

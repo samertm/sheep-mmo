@@ -9,7 +9,7 @@ import (
 )
 
 type hub struct {
-	clients    map[*client.C]int
+	clients    map[*client.C]*data
 	broadcast  chan message.M
 	register   chan *client.C
 	unregister chan *client.C
@@ -18,7 +18,7 @@ type hub struct {
 }
 
 var h = hub{
-	clients:    make(map[*client.C]int),
+	clients:    make(map[*client.C]*data),
 	broadcast:  make(chan message.M),
 	register:   make(chan *client.C),
 	unregister: make(chan *client.C),
@@ -31,7 +31,10 @@ func (h *hub) run() {
 	for {
 		select {
 		case c := <-h.register:
-			h.clients[c] = id
+			h.clients[c] = &data{
+				id:   id,
+				msgs: make(map[string]message.M),
+			}
 			id++
 		case c := <-h.unregister:
 			delete(h.clients, c)
@@ -39,18 +42,20 @@ func (h *hub) run() {
 		case cMsg := <-h.update: // recieves clientMsg
 			msgs := message.Decode(cMsg.C, cMsg.Msg)
 			for _, m := range msgs {
-				go func() {
+				h.clients[cMsg.C].msgs[m.Type()] = m
+				go func(m message.M) {
 					h.broadcast <- m
-				}()
+				}(m)
 			}
 		case <-h.tick:
 			if len(h.clients) != 0 {
 				engine.Tick()
-				msgs := engine.CreateMessages()
+				msgs := append(engine.CreateMessages(),
+					createMessages(h.clients)...)
 				for _, m := range msgs {
-					go func() {
+					go func(m message.M) {
 						h.broadcast <- m
-					}()
+					}(m)
 				}
 			}
 		case m := <-h.broadcast:
