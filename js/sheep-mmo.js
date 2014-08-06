@@ -134,6 +134,9 @@ function decode(data) {
 }
 
 function processMessages(msgs) {
+    if (msgs.length === 0) {
+        return;
+    }
     ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
     activeSheep = [];
     for (var i = 0; i < msgs.length; i++) {
@@ -168,10 +171,14 @@ function getLast(msgs) {
     var result = [];
     var check = {};
     for (var i = clone.length - 1; i >= 0; i--) {
+        // check to see if the message is a tick
+        if (clone[i][0] == "tick") {
+            return result;
+        }
         var id = clone[i][0].concat(clone[i][1]);
         if (check[id] !== true) {
             check[id] = true;
-            result.push(clone[i])
+            result.push(clone[i]);
         }
     }
     return result

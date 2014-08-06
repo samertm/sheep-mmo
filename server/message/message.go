@@ -20,6 +20,29 @@ func init() {
 	mouseIds = make(map[*client.C]int)
 }
 
+type tick struct {
+}
+
+func (t tick) Data() []byte {
+	return []byte("(tick)")
+}
+
+func (t tick) Client() *client.C {
+	return nil
+}
+
+func (t tick) Type() string {
+	return "tick"
+}
+
+func TickConcat(msgs ...[]M) []M {
+	result := []M{tick{}}
+	for _, m := range msgs {
+		result = append(result, m...)
+	}
+	return result
+}
+
 type mouse struct {
 	id   int
 	c    *client.C

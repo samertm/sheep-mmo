@@ -50,8 +50,8 @@ func (h *hub) run() {
 		case <-h.tick:
 			if len(h.clients) != 0 {
 				engine.Tick()
-				msgs := append(engine.CreateMessages(),
-					createMessages(h.clients)...)
+				msgs := message.TickConcat(engine.CreateMessages(),
+					createMessages(h.clients))
 				for _, m := range msgs {
 					go func(m message.M) {
 						h.broadcast <- m
