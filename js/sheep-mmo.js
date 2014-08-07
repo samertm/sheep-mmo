@@ -121,7 +121,9 @@ function decode(data) {
                 continue;
             }
             if (data[i] == " ") {
-                databuffer.push(stringbuffer);
+                if (stringbuffer != "") {
+                    databuffer.push(stringbuffer);
+                }
                 stringbuffer = "";
                 continue;
             }
