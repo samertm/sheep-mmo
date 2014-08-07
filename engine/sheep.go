@@ -13,6 +13,7 @@ type Sheep struct {
 	DestX, DestY  int
 	Height, Width int
 	bounceHeight  int
+	name          string
 	bounceUp      bool
 	state         sheepState
 }
@@ -44,6 +45,7 @@ func newSheep() *Sheep {
 		Height:   SheepHeight,
 		Width:    SheepWidth,
 		bounceUp: true,
+		name:     "Mr. Sheep",
 		state:    thinking,
 	}
 	sheepId++
@@ -145,5 +147,6 @@ func (s *Sheep) walk() {
 
 func (s Sheep) Data() []byte {
 	return []byte("(sheep " + strconv.Itoa(s.id) + " " +
-		strconv.Itoa(s.ShowX) + " " + strconv.Itoa(s.ShowY) + ")")
+		strconv.Itoa(s.ShowX) + " " + strconv.Itoa(s.ShowY) +
+		" \"" + s.name + "\")")
 }

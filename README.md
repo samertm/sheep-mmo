@@ -4,14 +4,14 @@ Feed a sheep, rule the world.
 
 ````
              message ::== "(" <message-part> ")"
-        message-part ::== <mouse-message>
-                        | <sheep-message>
-                        | <tick-message>
+        message-part ::== <*-message>
         tick-message ::== "tick"
        mouse-message ::== "mouse " xcoord " " ycoord
 server-mouse-message ::== "mouse " id " " xcoord " " ycoord
-       sheep-message ::== "sheep " id " " xcoord " " ycoord
+       sheep-message ::== "sheep " id " " xcoord " " ycoord " " sheep-name
+      rename-message ::== "rename " id " " sheep-name
   id, xcoord, ycoord ::== non-negative integer
+          sheep-name ::== string (can be delimited with double quotes)
 ````
 
 Server-to-client messages: sheep-message, server-mouse-message

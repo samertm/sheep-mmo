@@ -8,6 +8,8 @@ var host = "localhost";
 var port = "4977";
 var ip = scheme + host + ":" + port;
 
+var statusbox = $("#status-box")
+
 var canvas = $('#screen')
 canvas[0].width = board_width * offset;
 canvas[0].height = board_height * offset;
@@ -18,7 +20,6 @@ var activeSheep = [];
 // All other players' mouse positions
 var activeMice = [];
 // Global message to show on the canvas
-var message = "";
 var serverMessages = [];
 
 var images = {
@@ -63,42 +64,38 @@ function processMouseClick(evt, activeSheep, ctx, conn) {
     var found = false;
     for (var i = 0; i < snapshot.length; i++) {
         if (snapshot[i][0] == "sheep") {
-            var sheepx = parseInt(snapshot[i][2]);
-            var sheepy = parseInt(snapshot[i][3]);
-            if (pos.x >= sheepx && pos.x < sheepx + images["sheep"].width &&
-                pos.y >= sheepy && pos.y < sheepy + images["sheep"].height) {
+            var sheep = newSheep(snapshot[i]);
+            if (sheep === undefined) {
+                continue;
+            }
+            if (pos.x >= sheep.x && pos.x < sheep.x + sheep.width &&
+                pos.y >= sheep.y && pos.y < sheep.y + sheep.height) {
                 found = true;
                 // Pick the forward most sheep. If two sheep have the same
                 // y coordinate, pick the left most one.
-                if (typeof(foundSheepY) == "undefined") {
-                    var foundSheepY = sheepy;
-                    var foundSheepX = sheepx;
-                    var foundSheep = snapshot[i];
-                } else if (foundSheepY < sheepy) {
-                    foundSheepY = sheepy;
-                    foundSheepX = sheepx;
-                    foundSheep = snapshot[i];
-                } else if (foundSheepY == sheepy && foundSheepX > sheepx) {
-                    foundSheepY = sheepy;
-                    foundSheepX = sheepx;
-                    foundSheep = snapshot[i];
+                if (typeof(foundSheep) == "undefined") {
+                    var foundSheep = sheep;
+                } else if (foundSheep.Y < sheep.y) {
+                    foundSheep = sheep;
+                } else if (foundSheep.y == sheep.y && foundSheep.x > sheep.x) {
+                    foundSheep = sheep;
                 }
             }
         }
     }
     if (found) {
-        displayMessage("found one! id: " + foundSheep);
+        displayMessage("Sheep Name: " + foundSheep.name);
     } else {
         clearMessage();
     }
 }
 
 function clearMessage() {
-    message = "";
+    statusbox.text("");
 }
 
 function displayMessage(str) {
-    message = str;
+    statusbox.text(str);
 }
 
 function decode(data) {
@@ -116,9 +113,11 @@ function decode(data) {
             break;
         case "in-message":
             if (data[i] == ")") {
-                databuffer.push(stringbuffer);
+                if (stringbuffer != "") {
+                    databuffer.push(stringbuffer);
+                }
                 result.push(databuffer);
-                state = "out"
+                state = "out";
                 continue;
             }
             if (data[i] == " ") {
@@ -126,11 +125,48 @@ function decode(data) {
                 stringbuffer = "";
                 continue;
             }
+            if (data[i] == "\"") {
+                if (stringbuffer.length != 0) {
+                    state = "error";
+                    continue;
+                }
+                state = "in-dquote";
+                continue;
+            }
             stringbuffer += data[i]
             break;
+        case "in-dquote":
+            if (data[i] == "\"") {
+                databuffer.push(stringbuffer);
+                stringbuffer = "";
+                state = "in-message";
+                continue;
+            }
+            stringbuffer += data[i];
+            break;
+        case "error":
+            return undefined;
         }
     }
+    if (state != "out") {
+        return undefined;
+    }
     return result
+}
+
+function newSheep(sheepmsg) {
+    if (sheepmsg[0] !== "sheep" || sheepmsg.length !== 5) {
+        console.log("bad sheep message " + sheepmsg);
+        return undefined;
+    }
+    return {
+        id: sheepmsg[1],
+        x: parseInt(sheepmsg[2]),
+        y: parseInt(sheepmsg[3]),
+        name: sheepmsg[4],
+        width: images["sheep"].width,
+        height: images["sheep"].height
+    };
 }
 
 function processMessages(msgs) {
@@ -151,11 +187,6 @@ function processMessages(msgs) {
             ctx.drawImage(images["mouse"], parseInt(msg[2]), parseInt(msg[3]));
             break;
         }
-    }
-    if (message != "") {
-        ctx.fillStyle = "black";
-        ctx.font = "bold 16px Arial";
-        ctx.fillText(message, 10, 20);
     }
 }
 
@@ -191,6 +222,10 @@ function Conn(ip) {
     }
     c.onmessage = function(evt) {
         var msgs = decode(evt.data)
+        if (msgs === undefined) {
+            console.log("bad decode! " + evt.data);
+            return;
+        }
         for (i = 0; i < msgs.length; i++) {
             serverMessages.push(msgs[i])
         }
