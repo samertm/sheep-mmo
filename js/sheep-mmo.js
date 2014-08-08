@@ -1,4 +1,5 @@
 // sheep-mmo - feed a sheep, rule the world.
+// TODO: activeSheep hash for accessing sheep by id.
 var offset = 16;
 var board_height = 32;
 var board_width = 48;
@@ -8,7 +9,10 @@ var host = "localhost";
 var port = "4977";
 var ip = scheme + host + ":" + port;
 
-var statusbox = $("#status-box")
+var statusbox = $("#status-box");
+var statusstatic = $("#status-static")
+    .append($("<input type=button value='Gen Sheep'>")
+            .click(function() { generateSheep() }));
 
 var canvas = $('#screen')
 canvas[0].width = board_width * offset;
@@ -63,6 +67,7 @@ function processMouseClick(evt, activeSheep, ctx, conn) {
     // TODO: are functions atomic? Ask Mary.
     var snapshot = activeSheep.slice(0);
     var found = false;
+    foundSheep = undefined;
     for (var i = 0; i < snapshot.length; i++) {
         if (snapshot[i][0] == "sheep") {
             var sheep = newSheep(snapshot[i]);
@@ -75,7 +80,7 @@ function processMouseClick(evt, activeSheep, ctx, conn) {
                 // Pick the forward most sheep. If two sheep have the same
                 // y coordinate, pick the left most one.
                 if (typeof(foundSheep) == "undefined") {
-                    var foundSheep = sheep;
+                    foundSheep = sheep;
                 } else if (foundSheep.Y < sheep.y) {
                     foundSheep = sheep;
                 } else if (foundSheep.y == sheep.y && foundSheep.x > sheep.x) {
@@ -85,26 +90,33 @@ function processMouseClick(evt, activeSheep, ctx, conn) {
         }
     }
     if (found) {
-        displayMessage("Sheep Name: " + foundSheep.name);
+        displaySheepStatus();
     } else {
         clearMessage();
     }
 }
 
 function clearMessage() {
-    statusbox.html("");
+    if (typeof(foundSheep) == "undefined") {
+        statusbox.html("");
+    } else {
+        displaySheepStatus();
+    }
 }
 
-function displayMessage(str) {
+function displaySheepStatus() {
     var button = $("<input type='button' value='rename'>")
-        .click(function () {displayRename("") });
-    statusbox.text(str).append(button);
+        .click(function () {displayRename(foundSheep.name) });
+    statusbox.text("Name: " + foundSheep.name).append(button);
 }
 
 function displayRename(str) {
     statusbox.text("");
     var renamebutton = $("<input type='button' value='rename'>")
-        .click(function() {sendRename($("#rename").val())});
+        .click(function() {
+            foundSheep = undefined;
+            sendRename($("#rename").val())
+        });
     var cancelbutton = $("<input type='button' value='cancel'>")
         .click(function() {clearMessage()});
     statusbox.append("<input id='rename' type='text' value='" + str + "'>")
@@ -112,8 +124,13 @@ function displayRename(str) {
 }
 
 function sendRename(str) {
-    conn.sendCheck("(rename " + 0 + " \"" + str + "\")");
+    conn.sendCheck("(rename " + foundSheep.id + " \"" + str + "\")");
     clearMessage();
+}
+
+function generateSheep() {
+    console.log("got hur")
+    conn.sendCheck("(gen-sheep)");
 }
 
 function decode(data) {

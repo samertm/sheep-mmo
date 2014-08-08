@@ -66,6 +66,10 @@ func (m mWrapper) Client() *client.C {
 	return nil
 }
 
+func GenSheep() {
+	Board.Actors = append(Board.Actors, newSheep())
+}
+
 // TODO: Rename to "Messages"?
 func CreateMessages() []message.M {
 	messages := make([]message.M, 0, len(Board.Actors))

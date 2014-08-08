@@ -106,7 +106,7 @@ func start(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 
 func beg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	var i int
-	for ; i < len(msg) && msg[i] != ' '; i++ {
+	for ; i < len(msg) && msg[i] != ' ' && msg[i] != ')'; i++ {
 		// For loop left intentionally blank.
 	}
 	msgType := string(msg[0:i])
@@ -115,7 +115,10 @@ func beg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 		return mouseMsg, c, msg[i+1:] // i+1 skips the space
 	case "rename":
 		return renameMsg, c, msg[i+1:]
+	case "gen-sheep":
+		return gensheepMsg, c, msg[i+1:]
 	default:
+		log.Println("Errored: " + string(msg))
 		return nil, nil, nil
 	}
 }
@@ -204,4 +207,28 @@ func renameMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) 
 	}
 	ch <- Rename{Id: id, Name: name}
 	return start, c, msg[1:]
+}
+
+type GenSheep struct {
+}
+
+func (g GenSheep) Data() []byte {
+	return []byte("")
+}
+
+func (g GenSheep) Client() *client.C {
+	return nil
+}
+
+func (g GenSheep) Type() string {
+	return "gen-sheep"
+}
+
+func gensheepMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
+	ch <- GenSheep{}
+	var i int
+	for ; i < len(msg) && msg[i] != ')'; i++ {
+	}
+	// TODO: fix this ):L
+	return start, c, msg
 }

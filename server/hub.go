@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"time"
 
 	"github.com/samertm/sheep-mmo/engine"
@@ -29,7 +30,7 @@ var h = hub{
 var forclient map[string]bool
 
 func init() {
-	forclient = map[string]bool {
+	forclient = map[string]bool{
 		"mouse": true,
 	}
 }
@@ -58,6 +59,8 @@ func (h *hub) run() {
 				} else if m.Type() == "rename" {
 					r := m.(message.Rename)
 					engine.Rename(r.Id, r.Name)
+				} else if m.Type() == "gen-sheep" {
+					engine.GenSheep()
 				}
 			}
 		case <-h.tick:
