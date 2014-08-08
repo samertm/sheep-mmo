@@ -189,7 +189,6 @@ func renameMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) 
 	}
 	i++ // skip space
 	var name string
-	log.Println(string(msg))
 	if msg[i] == '"' {
 		name, msg = getString(msg[i+1:])
 	} else {
