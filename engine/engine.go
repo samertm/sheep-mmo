@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"errors"
+
 	"github.com/samertm/sheep-mmo/server/client"
 	"github.com/samertm/sheep-mmo/server/message"
 )
@@ -31,6 +33,17 @@ func newBoard() *board {
 }
 
 var Board *board
+
+func (b *board) getSheep(id int) (*Sheep, error) {
+	for _, a := range b.Actors {
+		if s, ok := a.(*Sheep); ok {
+			if s.id == id {
+				return s, nil
+			}
+		}
+	}
+	return nil, errors.New("Could not find sheep")
+}
 
 func init() {
 	Board = newBoard()

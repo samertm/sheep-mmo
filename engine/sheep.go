@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"log"
 	"math/rand"
 	"strconv"
 	"time"
@@ -149,4 +150,13 @@ func (s Sheep) Data() []byte {
 	return []byte("(sheep " + strconv.Itoa(s.id) + " " +
 		strconv.Itoa(s.ShowX) + " " + strconv.Itoa(s.ShowY) +
 		" \"" + s.name + "\")")
+}
+
+func Rename(id int, name string) {
+	s, err := Board.getSheep(id)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	s.name = name
 }

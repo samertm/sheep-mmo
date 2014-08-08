@@ -45,7 +45,8 @@ window.onload = function() {
         return;
     }
 
-    var conn = new Conn(ip, $(canvas)[0]);
+    // conn is a global :D javascript, yay
+    conn = new Conn(ip, $(canvas)[0]);
     $(canvas).on("mousemove", function(evt) {
         sendMouseMove(evt, ctx, conn);
     });
@@ -91,11 +92,28 @@ function processMouseClick(evt, activeSheep, ctx, conn) {
 }
 
 function clearMessage() {
-    statusbox.text("");
+    statusbox.html("");
 }
 
 function displayMessage(str) {
-    statusbox.text(str);
+    var button = $("<input type='button' value='rename'>")
+        .click(function () {displayRename("") });
+    statusbox.text(str).append(button);
+}
+
+function displayRename(str) {
+    statusbox.text("");
+    var renamebutton = $("<input type='button' value='rename'>")
+        .click(function() {sendRename($("#rename").val())});
+    var cancelbutton = $("<input type='button' value='cancel'>")
+        .click(function() {clearMessage()});
+    statusbox.append("<input id='rename' type='text' value='" + str + "'>")
+        .append(renamebutton).append(cancelbutton);
+}
+
+function sendRename(str) {
+    conn.sendCheck("(rename " + 0 + " \"" + str + "\")");
+    clearMessage();
 }
 
 function decode(data) {
@@ -253,3 +271,4 @@ function sendMouseMove(evt, ctx, conn) {
     var pos = getMousePos(ctx.canvas, evt);
     conn.sendCheck("(mouse " + pos.x + " " + pos.y + ")");
 }
+

@@ -26,6 +26,14 @@ var h = hub{
 	tick:       time.Tick(70 * time.Millisecond),
 }
 
+var forclient map[string]bool
+
+func init() {
+	forclient = map[string]bool {
+		"mouse": true,
+	}
+}
+
 func (h *hub) run() {
 	id := 0
 	for {
@@ -42,10 +50,15 @@ func (h *hub) run() {
 		case cMsg := <-h.update: // recieves clientMsg
 			msgs := message.Decode(cMsg.C, cMsg.Msg)
 			for _, m := range msgs {
-				h.clients[cMsg.C].msgs[m.Type()] = m
-				go func(m message.M) {
-					h.broadcast <- m
-				}(m)
+				if _, ok := forclient[m.Type()]; ok {
+					h.clients[cMsg.C].msgs[m.Type()] = m
+					go func(m message.M) {
+						h.broadcast <- m
+					}(m)
+				} else if m.Type() == "rename" {
+					r := m.(message.Rename)
+					engine.Rename(r.Id, r.Name)
+				}
 			}
 		case <-h.tick:
 			if len(h.clients) != 0 {

@@ -16,5 +16,5 @@ server-mouse-message ::== "mouse " id " " xcoord " " ycoord
 
 Server-to-client messages: sheep-message, server-mouse-message
 
-Client-to-server messages: mouse-message
+Client-to-server messages: mouse-message, rename-message
 

@@ -43,13 +43,13 @@ func TickConcat(msgs ...[]M) []M {
 	return result
 }
 
-type mouse struct {
-	id   int
+type Mouse struct {
+	Id   int
 	c    *client.C
-	x, y int
+	X, Y int
 }
 
-func NewMouse(c *client.C, x, y int) mouse {
+func NewMouse(c *client.C, x, y int) Mouse {
 	var id int
 	if i, ok := mouseIds[c]; ok {
 		id = i
@@ -58,19 +58,19 @@ func NewMouse(c *client.C, x, y int) mouse {
 		mouseIds[c] = id
 		maxMouseId++
 	}
-	return mouse{id: id, c: c, x: x, y: y}
+	return Mouse{Id: id, c: c, X: x, Y: y}
 }
 
-func (m mouse) Data() []byte {
-	return []byte("(mouse " + strconv.Itoa(m.id) + " " +
-		strconv.Itoa(m.x) + " " + strconv.Itoa(m.y) + ")")
+func (m Mouse) Data() []byte {
+	return []byte("(mouse " + strconv.Itoa(m.Id) + " " +
+		strconv.Itoa(m.X) + " " + strconv.Itoa(m.Y) + ")")
 }
 
-func (m mouse) Client() *client.C {
+func (m Mouse) Client() *client.C {
 	return m.c
 }
 
-func (m mouse) Type() string {
+func (m Mouse) Type() string {
 	return "mouse"
 }
 
@@ -113,6 +113,8 @@ func beg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	switch msgType {
 	case "mouse":
 		return mouseMsg, c, msg[i+1:] // i+1 skips the space
+	case "rename":
+		return renameMsg, c, msg[i+1:]
 	default:
 		return nil, nil, nil
 	}
@@ -143,4 +145,64 @@ func mouseMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 	}
 	ch <- NewMouse(c, x, y)
 	return start, c, msg[j+1:]
+}
+
+// Returns (stringfound, restofmessage)
+func getString(msg []byte) (string, []byte) {
+	if len(msg) == 0 {
+		return "", msg
+	}
+	for i := 0; i < len(msg); i++ {
+		if msg[i] == '"' {
+			return string(msg[:i]), msg[i+1:]
+		}
+	}
+	return "", msg
+}
+
+type Rename struct {
+	Id   int
+	Name string
+}
+
+func (r Rename) Data() []byte {
+	return []byte("")
+}
+
+func (r Rename) Client() *client.C {
+	return nil
+}
+
+func (r Rename) Type() string {
+	return "rename"
+}
+
+// (rename \d \w)
+func renameMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
+	var i int
+	for ; i < len(msg) && msg[i] != ' '; i++ {
+	}
+	id, err := strconv.Atoi(string(msg[:i]))
+	if err != nil {
+		log.Println("errored on: " + string(msg))
+		return nil, nil, nil
+	}
+	i++ // skip space
+	var name string
+	log.Println(string(msg))
+	if msg[i] == '"' {
+		name, msg = getString(msg[i+1:])
+	} else {
+		j := i
+		for ; j < len(msg) && msg[j] != ')'; j++ {
+		}
+		name, msg = string(msg[i:j]), msg[j:]
+	}
+	if msg[0] != ')' {
+		// TODO tighten up
+		log.Println("errored " + string(msg))
+		return nil, nil, nil
+	}
+	ch <- Rename{Id: id, Name: name}
+	return start, c, msg[1:]
 }
