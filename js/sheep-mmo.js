@@ -20,7 +20,7 @@ canvas[0].height = board_height * offset;
 var ctx = canvas[0].getContext("2d");
 
 // All sheep currently active
-var activeSheep = [];
+var activeSheep = {};
 // All other players' mouse positions
 var activeMice = [];
 // Global message to show on the canvas
@@ -55,22 +55,22 @@ window.onload = function() {
         sendMouseMove(evt, ctx, conn);
     });
     $(canvas).click(function(evt) {
-        processMouseClick(evt, activeSheep, ctx, conn);
+        processMouseClick(evt, ctx, conn);
     });
     window.setInterval(loop, 10);
 }
 
-function processMouseClick(evt, activeSheep, ctx, conn) {
+function processMouseClick(evt, ctx, conn) {
     //console.log("processMouseClick fired");
     var pos = getMousePos(ctx.canvas, evt);
     // just in case activeSheep gets clobbered in processMessages
     // TODO: are functions atomic? Ask Mary.
-    var snapshot = activeSheep.slice(0);
     var found = false;
     foundSheep = undefined;
-    for (var i = 0; i < snapshot.length; i++) {
-        if (snapshot[i][0] == "sheep") {
-            var sheep = newSheep(snapshot[i]);
+    for (var i = 0; i < activeSheep.keys.length; i++) {
+        var id = activeSheep.keys[i];
+        if (activeSheep[id].type == "sheep") {
+            var sheep = activeSheep[id];
             if (sheep === undefined) {
                 continue;
             }
@@ -80,11 +80,12 @@ function processMouseClick(evt, activeSheep, ctx, conn) {
                 // Pick the forward most sheep. If two sheep have the same
                 // y coordinate, pick the left most one.
                 if (typeof(foundSheep) == "undefined") {
-                    foundSheep = sheep;
-                } else if (foundSheep.Y < sheep.y) {
-                    foundSheep = sheep;
-                } else if (foundSheep.y == sheep.y && foundSheep.x > sheep.x) {
-                    foundSheep = sheep;
+                    foundSheep = sheep.id;
+                } else if (activeSheep[foundSheep].Y < sheep.y) {
+                    foundSheep = sheep.id;
+                } else if (activeSheep[foundSheep].y == sheep.y &&
+                           activeSheep[foundSheep].x > sheep.x) {
+                    foundSheep = sheep.id;
                 }
             }
         }
@@ -106,8 +107,8 @@ function clearMessage() {
 
 function displaySheepStatus() {
     var button = $("<input type='button' value='rename'>")
-        .click(function () {displayRename(foundSheep.name) });
-    statusbox.text("Name: " + foundSheep.name).append(button);
+        .click(function () {displayRename(activeSheep[foundSheep].name) });
+    statusbox.text("Name: " + activeSheep[foundSheep].name).append(button);
 }
 
 function displayRename(str) {
@@ -123,7 +124,7 @@ function displayRename(str) {
 }
 
 function sendRename(str) {
-    conn.sendCheck("(rename " + foundSheep.id + " \"" + str + "\")");
+    conn.sendCheck("(rename " + activeSheep[foundSheep].id + " \"" + str + "\")");
     foundSheep = undefined;
     clearMessage();
 }
@@ -197,12 +198,13 @@ function newSheep(sheepmsg) {
         return undefined;
     }
     return {
+        type: "sheep",
         id: sheepmsg[1],
         x: parseInt(sheepmsg[2]),
         y: parseInt(sheepmsg[3]),
         name: sheepmsg[4],
         width: images["sheep"].width,
-        height: images["sheep"].height
+        height: images["sheep"].height,
     };
 }
 
@@ -211,13 +213,16 @@ function processMessages(msgs) {
         return;
     }
     ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
-    activeSheep = [];
+    activeSheep = {};
+    activeSheep.keys = [];
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         switch (msg[0]) {
         case "sheep":
-            activeSheep.push(msg);
-            ctx.drawImage(images["sheep"], parseInt(msg[2]), parseInt(msg[3]));
+            var sheep = newSheep(msg);
+            activeSheep[sheep.id] = sheep;
+            activeSheep.keys.push(sheep.id);
+            ctx.drawImage(images["sheep"], sheep.x, sheep.y);
             break;
         case "mouse":
             console.log(msg);
