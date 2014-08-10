@@ -22,7 +22,7 @@ var ctx = canvas[0].getContext("2d");
 // All sheep currently active
 var activeSheep = {};
 // All other players' mouse positions
-var activeMice = [];
+var activeMice = {};
 // Global message to show on the canvas
 var serverMessages = [];
 
@@ -219,56 +219,87 @@ function decode(data) {
     return result
 }
 
-function newSheep(sheepmsg) {
-    if (sheepmsg[0] !== "sheep" || sheepmsg.length !== 5) {
-        console.log("bad sheep message " + sheepmsg);
+function Sheep(msg) {
+    if (msg[0] !== "sheep" || msg.length !== 5) {
+        console.log("bad sheep message " + msg);
         return undefined;
     }
     return {
         type: "sheep",
-        id: sheepmsg[1],
-        x: parseInt(sheepmsg[2]),
-        y: parseInt(sheepmsg[3]),
-        name: sheepmsg[4],
+        id: msg[1],
+        x: parseInt(msg[2]),
+        y: parseInt(msg[3]),
+        name: msg[4],
         width: images["sheep"].width,
         height: images["sheep"].height,
     };
+}
+
+function Mouse(msg) {
+    if (msg[0] !== "mouse" || msg.length !== 4) {
+        console.log("bad mouse message " + msg);
+        return undefined;
+    }
+    return {
+        type: "mouse",
+        id: msg[1],
+        x: parseInt(msg[2]),
+        y: parseInt(msg[3]),
+        width: images["mouse"].width,
+        height: images["mouse"].height,
+    }
 }
 
 function processMessages(msgs) {
     if (msgs.length === 0) {
         return;
     }
-    ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
     var updated = false;
     activeSheep = {};
     activeSheep.keys = [];
+    activeMice = {};
+    activeMice.keys = [];
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         switch (msg[0]) {
         case "sheep":
-            var sheep = newSheep(msg);
+            var sheep = new Sheep(msg);
             if (sheepDiff(sheep, activeSheep[sheep.id])) {
                 updated = true;
             }
             activeSheep[sheep.id] = sheep;
             activeSheep.keys.push(sheep.id);
-            ctx.drawImage(images["sheep"], sheep.x, sheep.y);
             break;
         case "mouse":
-            ctx.drawImage(images["mouse"], parseInt(msg[2]), parseInt(msg[3]));
+            var mouse = new Mouse(msg);
+            activeMice[mouse.id] = mouse;
+            activeMice.keys.push(mouse.id);
             break;
         }
     }
+    activeSheep.keys.sort();
+    activeMice.keys.sort();
     if (updated === true) {
         updateDisplay();
     }
 }
 
+function drawScreen() {
+    ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
+    for (var i = 0; i < activeSheep.keys.length; i++) {
+        var sheep = activeSheep[activeSheep.keys[i]];
+        ctx.drawImage(images["sheep"], sheep.x, sheep.y);
+    }
+    for (var i = 0; i < activeMice.keys.length; i++) {
+        var sheep = activeMice[activeMice.keys[i]];
+        ctx.drawImage(images["mouse"], sheep.x, sheep.y);
+    }
+}
+
 function loop() {
     processMessages(serverMessages);
-    // Preserve last message
-    serverMessages = getLast(serverMessages)
+    serverMessages = getLast(serverMessages) // Preserve last message
+    drawScreen();
 }
 
 // Does not modify msgs.
