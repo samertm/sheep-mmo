@@ -26,6 +26,10 @@ var activeMice = [];
 // Global message to show on the canvas
 var serverMessages = [];
 
+var sheepDiffAttributes = ["name"];
+
+var statusDisplayed = false;
+
 var images = {
     "sheep": function() {
         var i = new Image();
@@ -57,7 +61,8 @@ window.onload = function() {
     $(canvas).click(function(evt) {
         processMouseClick(evt, ctx, conn);
     });
-    window.setInterval(loop, 10);
+    var tick = 10;
+    window.setInterval(loop, tick);
 }
 
 function processMouseClick(evt, ctx, conn) {
@@ -97,7 +102,23 @@ function processMouseClick(evt, ctx, conn) {
     }
 }
 
+// Returns true if they're different, false if they're the same.
+function sheepDiff(sheep0, sheep1) {
+    if (typeof(sheep0) === "undefined" ||
+        typeof(sheep1) === "undefined") {
+        return false;
+    }
+    for (var i = 0; i < sheepDiffAttributes.length; i++) {
+        var attr = sheepDiffAttributes[i];
+        if (sheep0[attr] !== sheep1[attr]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function clearMessage() {
+    statusDisplayed = false;
     if (typeof(foundSheep) == "undefined") {
         statusbox.html("");
     } else {
@@ -105,13 +126,21 @@ function clearMessage() {
     }
 }
 
+function updateDisplay() {
+    if (statusDisplayed === true) {
+        displaySheepStatus();
+    }
+}
+
 function displaySheepStatus() {
+    statusDisplayed = true;
     var button = $("<input type='button' value='rename'>")
         .click(function () {displayRename(activeSheep[foundSheep].name) });
     statusbox.text("Name: " + activeSheep[foundSheep].name).append(button);
 }
 
 function displayRename(str) {
+    statusDisplayed = false;
     statusbox.text("");
     var renamebutton = $("<input type='button' value='rename'>")
         .click(function() {
@@ -125,12 +154,10 @@ function displayRename(str) {
 
 function sendRename(str) {
     conn.sendCheck("(rename " + activeSheep[foundSheep].id + " \"" + str + "\")");
-    foundSheep = undefined;
     clearMessage();
 }
 
 function generateSheep() {
-    console.log("got hur")
     conn.sendCheck("(gen-sheep)");
 }
 
@@ -213,6 +240,7 @@ function processMessages(msgs) {
         return;
     }
     ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
+    var updated = false;
     activeSheep = {};
     activeSheep.keys = [];
     for (var i = 0; i < msgs.length; i++) {
@@ -220,15 +248,20 @@ function processMessages(msgs) {
         switch (msg[0]) {
         case "sheep":
             var sheep = newSheep(msg);
+            if (sheepDiff(sheep, activeSheep[sheep.id])) {
+                updated = true;
+            }
             activeSheep[sheep.id] = sheep;
             activeSheep.keys.push(sheep.id);
             ctx.drawImage(images["sheep"], sheep.x, sheep.y);
             break;
         case "mouse":
-            console.log(msg);
             ctx.drawImage(images["mouse"], parseInt(msg[2]), parseInt(msg[3]));
             break;
         }
+    }
+    if (updated === true) {
+        updateDisplay();
     }
 }
 
