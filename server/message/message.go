@@ -1,6 +1,7 @@
 package message
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 
@@ -62,8 +63,7 @@ func NewMouse(c *client.C, x, y int) Mouse {
 }
 
 func (m Mouse) Data() []byte {
-	return []byte("(mouse " + strconv.Itoa(m.Id) + " " +
-		strconv.Itoa(m.X) + " " + strconv.Itoa(m.Y) + ")")
+	return []byte(fmt.Sprintf("(mouse %d %d %d)", m.Id, m.X, m.Y))
 }
 
 func (m Mouse) Client() *client.C {

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"math"
 
 	"github.com/samertm/sheep-mmo/server/client"
 	"github.com/samertm/sheep-mmo/server/message"
@@ -21,8 +22,8 @@ type Object interface {
 type Collidable interface {
 	X() int
 	Y() int
-	Height() int
 	Width() int
+	Height() int
 }
 
 type Dataer interface {
@@ -125,6 +126,51 @@ func CreateMessages() []message.M {
 		messages = append(messages, mWrapper{data: d.Data()})
 	}
 	return messages
+}
+
+type pair struct {
+	x, y int
+}
+
+func toCollidableSlice(others interface{}) []Collidable {
+	result := make([]Collidable, 0)
+	switch os := others.(type) {
+	case []Object:
+		for _, o := range os {
+			result = append(result, o)
+		}
+	case []Actor:
+		for _, o := range os {
+			result = append(result, o)
+		}
+	}
+	return result
+}
+
+func middle(c Collidable) pair {
+	return pair{int((2*c.X() + c.Width()) / 2), int((2*c.Y() + c.Height()) / 2)}
+}
+
+func collision(c0, c1 Collidable) bool {
+	c0mid := middle(c0)
+	c1mid := middle(c1)
+	// If the distance from c0mid to c1mid is less than the distance of
+	// c0mid plus half the width/height of c0 and c1, then the objects
+	// intersect.
+	if int(math.Abs(float64(c1mid.x - c0mid.x))) < (c0.Width() + c1.Width()) / 2 &&
+		int(math.Abs(float64(c1mid.y - c1mid.y))) < (c0.Height() + c1.Height()) / 2 {
+		return true
+	}
+	 return false
+}
+
+func collides(c Collidable, cs []Collidable) bool {
+	for _, coll := range cs {
+		if collision(c, coll) {
+			return true
+		}
+	}
+	return false
 }
 
 func Tick() {

@@ -1,9 +1,9 @@
 package engine
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
-	"strconv"
 	"time"
 )
 
@@ -75,7 +75,12 @@ func (s *sheep) Action() {
 			s.state = thinking
 			return
 		}
+		x, y, showX, showY := s.x, s.y, s.showX, s.showY
 		s.walk()
+		if collides(s, toCollidableSlice(Board.Objects)) {
+			s.x, s.y, s.showX, s.showY = x, y, showX, showY
+			s.state = thinking
+		}
 	}
 }
 
@@ -147,11 +152,11 @@ func (s *sheep) walk() {
 }
 
 func (s sheep) X() int {
-	return s.showX
+	return s.x
 }
 
 func (s sheep) Y() int {
-	return s.showY
+	return s.y
 }
 
 func (s sheep) Height() int {
@@ -163,9 +168,7 @@ func (s sheep) Width() int {
 }
 
 func (s sheep) Data() []byte {
-	return []byte("(sheep " + strconv.Itoa(s.id) + " " +
-		strconv.Itoa(s.showX) + " " + strconv.Itoa(s.showY) +
-		" \"" + s.name + "\")")
+	return []byte(fmt.Sprintf(`(sheep %d %d %d "%s")`, s.id, s.showX, s.showY, s.name))
 }
 
 func Rename(id int, name string) {
