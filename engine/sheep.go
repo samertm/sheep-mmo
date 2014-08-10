@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-type Sheep struct {
+type sheep struct {
 	id            int
-	X, Y          int
-	ShowX, ShowY  int
-	DestX, DestY  int
-	Height, Width int
+	x, y          int
+	showX, showY  int
+	destX, destY  int
+	height, width int
 	bounceHeight  int
 	name          string
 	bounceUp      bool
@@ -38,27 +38,27 @@ func init() {
 
 var sheepId int
 
-func newSheep() *Sheep {
-	s := &Sheep{
+func newSheep() *sheep {
+	s := &sheep{
 		id:       sheepId,
-		X:        rand.Intn(BoardWidth - SheepWidth),
-		Y:        rand.Intn(BoardHeight - SheepHeight),
-		Height:   SheepHeight,
-		Width:    SheepWidth,
+		x:        rand.Intn(BoardWidth - SheepWidth),
+		y:        rand.Intn(BoardHeight - SheepHeight),
+		height:   SheepHeight,
+		width:    SheepWidth,
 		bounceUp: true,
 		name:     "Mr. Sheep",
 		state:    thinking,
 	}
 	sheepId++
-	s.DestX = s.X
-	s.DestY = s.Y
-	s.ShowX = s.X
-	s.ShowY = s.Y
+	s.destX = s.x
+	s.destY = s.y
+	s.showX = s.x
+	s.showY = s.y
 	return s
 }
 
 // TODO: finishMoving state, to end a bounce cleanly.
-func (s *Sheep) Action() {
+func (s *sheep) Action() {
 	switch s.state {
 	case thinking:
 		//log.Println("thinking")
@@ -79,37 +79,37 @@ func (s *Sheep) Action() {
 	}
 }
 
-func (s Sheep) arrived() bool {
-	return s.X == s.DestX && s.Y == s.DestY
+func (s sheep) arrived() bool {
+	return s.x == s.destX && s.y == s.destY
 }
 
-func (s *Sheep) pickDestination() {
+func (s *sheep) pickDestination() {
 	step := 75
-	s.DestX += rand.Intn(2*step) - step
-	s.DestY += rand.Intn(2*step) - step
+	s.destX += rand.Intn(2*step) - step
+	s.destY += rand.Intn(2*step) - step
 	s.correctBounds()
 }
 
-func (s *Sheep) correctBounds() {
-	if s.X >= BoardWidth-SheepWidth {
-		s.X = BoardWidth - SheepWidth - 1
-	} else if s.X < 0 {
-		s.X = 0
+func (s *sheep) correctBounds() {
+	if s.x >= BoardWidth-SheepWidth {
+		s.x = BoardWidth - SheepWidth - 1
+	} else if s.x < 0 {
+		s.x = 0
 	}
-	if s.DestX >= BoardWidth-SheepWidth {
-		s.DestX = BoardWidth - SheepWidth - 1
-	} else if s.DestX < 0 {
-		s.DestX = 0
+	if s.destX >= BoardWidth-SheepWidth {
+		s.destX = BoardWidth - SheepWidth - 1
+	} else if s.destX < 0 {
+		s.destX = 0
 	}
-	if s.Y >= BoardHeight-SheepHeight {
-		s.Y = BoardHeight - SheepHeight - 1
-	} else if s.Y < 0 {
-		s.Y = 0
+	if s.y >= BoardHeight-SheepHeight {
+		s.y = BoardHeight - SheepHeight - 1
+	} else if s.y < 0 {
+		s.y = 0
 	}
-	if s.DestY >= BoardHeight-SheepHeight {
-		s.DestY = BoardHeight - SheepHeight - 1
-	} else if s.DestY < 0 {
-		s.DestY = 0
+	if s.destY >= BoardHeight-SheepHeight {
+		s.destY = BoardHeight - SheepHeight - 1
+	} else if s.destY < 0 {
+		s.destY = 0
 	}
 }
 
@@ -129,26 +129,42 @@ func moveTowards(pos, dest, step int) int {
 	return pos
 }
 
-func (s *Sheep) walk() {
+func (s *sheep) walk() {
 	step := 5
-	s.X = moveTowards(s.X, s.DestX, step)
-	s.Y = moveTowards(s.Y, s.DestY, step)
-	s.ShowX = s.X
+	s.x = moveTowards(s.x, s.destX, step)
+	s.y = moveTowards(s.y, s.destY, step)
+	s.showX = s.x
 	if s.bounceUp {
-		s.ShowY += 7
+		s.showY += 7
 	} else {
-		s.ShowY -= 7
+		s.showY -= 7
 	}
-	if s.ShowY > s.Y+10 {
+	if s.showY > s.y+10 {
 		s.bounceUp = false
-	} else if s.ShowY < s.Y {
+	} else if s.showY < s.y {
 		s.bounceUp = true
 	}
 }
 
-func (s Sheep) Data() []byte {
+func (s sheep) X() int {
+	return s.showX
+}
+
+func (s sheep) Y() int {
+	return s.showY
+}
+
+func (s sheep) Height() int {
+	return s.height
+}
+
+func (s sheep) Width() int {
+	return s.width
+}
+
+func (s sheep) Data() []byte {
 	return []byte("(sheep " + strconv.Itoa(s.id) + " " +
-		strconv.Itoa(s.ShowX) + " " + strconv.Itoa(s.ShowY) +
+		strconv.Itoa(s.showX) + " " + strconv.Itoa(s.showY) +
 		" \"" + s.name + "\")")
 }
 

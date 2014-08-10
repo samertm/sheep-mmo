@@ -8,7 +8,24 @@ import (
 )
 
 type Actor interface {
+	Dataer
+	Collidable
 	Action()
+}
+
+type Object interface {
+	Dataer
+	Collidable
+}
+
+type Collidable interface {
+	X() int
+	Y() int
+	Height() int
+	Width() int
+}
+
+type Dataer interface {
 	Data() []byte
 }
 
@@ -17,6 +34,7 @@ type board struct {
 	// directions.
 	Width, Height int
 	Actors        []Actor
+	Objects       []Object
 }
 
 const (
@@ -26,17 +44,18 @@ const (
 
 func newBoard() *board {
 	return &board{
-		Width:  BoardWidth,
-		Height: BoardHeight,
-		Actors: []Actor{newSheep()},
+		Width:   BoardWidth,
+		Height:  BoardHeight,
+		Actors:  []Actor{newSheep()},
+		Objects: []Object{fence{x: 50, y: 50, width: 25, height: 25}},
 	}
 }
 
 var Board *board
 
-func (b *board) getSheep(id int) (*Sheep, error) {
+func (b *board) getSheep(id int) (*sheep, error) {
 	for _, a := range b.Actors {
-		if s, ok := a.(*Sheep); ok {
+		if s, ok := a.(*sheep); ok {
 			if s.id == id {
 				return s, nil
 			}
@@ -70,11 +89,40 @@ func GenSheep() {
 	Board.Actors = append(Board.Actors, newSheep())
 }
 
+func toDataerSlice(os interface{}) []Dataer {
+	ds := make([]Dataer, 0)
+	switch iter := os.(type) {
+	case []Actor:
+		for _, d := range iter {
+			ds = append(ds, d)
+		}
+	case []Object:
+		for _, d := range iter {
+			ds = append(ds, d)
+		}
+	}
+	return ds
+}
+
+func IterDataers(slices ...interface{}) <-chan Dataer {
+	c := make(chan Dataer)
+	go func() {
+		defer close(c)
+		for _, slice := range slices {
+			ds := toDataerSlice(slice)
+			for _, d := range ds {
+				c <- d
+			}
+		}
+	}()
+	return c
+}
+
 // TODO: Rename to "Messages"?
 func CreateMessages() []message.M {
-	messages := make([]message.M, 0, len(Board.Actors))
-	for _, a := range Board.Actors {
-		messages = append(messages, mWrapper{data: a.Data()})
+	messages := make([]message.M, 0, len(Board.Actors)+len(Board.Objects))
+	for d := range IterDataers(Board.Actors, Board.Objects) {
+		messages = append(messages, mWrapper{data: d.Data()})
 	}
 	return messages
 }

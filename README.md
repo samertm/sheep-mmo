@@ -11,7 +11,9 @@ server-mouse-message ::== "mouse " id " " xcoord " " ycoord
        sheep-message ::== "sheep " id " " xcoord " " ycoord " " sheep-name
       rename-message ::== "rename " id " " sheep-name
    gen-sheep-message ::== "gen-sheep"
-  id, xcoord, ycoord ::== non-negative integer
+       fence-message ::== "fence " xcoord " " ycoord " " width " " height
+  id, xcoord, ycoord,
+       height, width ::== non-negative integer
           sheep-name ::== string (can be delimited with double quotes)
 ````
 

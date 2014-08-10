@@ -23,12 +23,15 @@ var ctx = canvas[0].getContext("2d");
 var activeSheep = {};
 // All other players' mouse positions
 var activeMice = {};
+// All fences
+var fences = [];
 // Global message to show on the canvas
 var serverMessages = [];
 
 var sheepDiffAttributes = ["name"];
 
 var statusDisplayed = false;
+var running = true;
 
 var images = {
     "sheep": function() {
@@ -63,6 +66,7 @@ window.onload = function() {
     });
     var tick = 10;
     window.setInterval(loop, tick);
+    
 }
 
 function processMouseClick(evt, ctx, conn) {
@@ -250,6 +254,20 @@ function Mouse(msg) {
     }
 }
 
+function Fence(msg) {
+    if (msg[0] !== "fence" || msg.length !== 5) {
+        console.log("bad fence message " + msg);
+        return undefined;
+    }
+    return {
+        type: "fence",
+        x: parseInt(msg[1]),
+        y: parseInt(msg[2]),
+        width: parseInt(msg[3]),
+        height: parseInt(msg[4]),
+    }
+}
+
 function processMessages(msgs) {
     if (msgs.length === 0) {
         return;
@@ -275,6 +293,9 @@ function processMessages(msgs) {
             activeMice[mouse.id] = mouse;
             activeMice.keys.push(mouse.id);
             break;
+        case "fence":
+            fences.push(Fence(msg));
+            break;
         }
     }
     activeSheep.keys.sort();
@@ -294,12 +315,19 @@ function drawScreen() {
         var sheep = activeMice[activeMice.keys[i]];
         ctx.drawImage(images["mouse"], sheep.x, sheep.y);
     }
+    for (var i = 0; i < fences.length; i++) {
+        var fence = fences[i];
+        ctx.fillStyle = "#804000";
+        ctx.fillRect(fence.x, fence.y, fence.width, fence.height);
+    }
 }
 
 function loop() {
-    processMessages(serverMessages);
-    serverMessages = getLast(serverMessages) // Preserve last message
-    drawScreen();
+    if (running === true) {
+        processMessages(serverMessages);
+        serverMessages = getLast(serverMessages) // Preserve last message
+        drawScreen();
+    }
 }
 
 // Does not modify msgs.
@@ -324,6 +352,7 @@ function getLast(msgs) {
 function Conn(ip) {
     c = new WebSocket(ip);
     c.onclose = function() {
+        running = false;
         console.log("connection closed");
     }
     c.onmessage = function(evt) {
