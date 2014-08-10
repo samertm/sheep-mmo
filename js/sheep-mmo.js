@@ -115,7 +115,6 @@ function displayRename(str) {
     var renamebutton = $("<input type='button' value='rename'>")
         .click(function() {
             sendRename($("#rename").val())
-            foundSheep = undefined;
         });
     var cancelbutton = $("<input type='button' value='cancel'>")
         .click(function() {clearMessage()});
@@ -125,6 +124,7 @@ function displayRename(str) {
 
 function sendRename(str) {
     conn.sendCheck("(rename " + foundSheep.id + " \"" + str + "\")");
+    foundSheep = undefined;
     clearMessage();
 }
 
