@@ -114,8 +114,8 @@ function displayRename(str) {
     statusbox.text("");
     var renamebutton = $("<input type='button' value='rename'>")
         .click(function() {
-            foundSheep = undefined;
             sendRename($("#rename").val())
+            foundSheep = undefined;
         });
     var cancelbutton = $("<input type='button' value='cancel'>")
         .click(function() {clearMessage()});
