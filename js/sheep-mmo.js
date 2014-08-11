@@ -69,7 +69,7 @@ window.onload = function() {
     
 }
 
-function processMouseClick(evt, ctx, conn) {
+var processMouseClick = function(evt, ctx, conn) {
     //console.log("processMouseClick fired");
     var pos = getMousePos(ctx.canvas, evt);
     // just in case activeSheep gets clobbered in processMessages
@@ -107,7 +107,7 @@ function processMouseClick(evt, ctx, conn) {
 }
 
 // Returns true if they're different, false if they're the same.
-function sheepDiff(sheep0, sheep1) {
+var sheepDiff = function(sheep0, sheep1) {
     if (typeof(sheep0) === "undefined" ||
         typeof(sheep1) === "undefined") {
         return false;
@@ -121,7 +121,7 @@ function sheepDiff(sheep0, sheep1) {
     return false;
 }
 
-function clearMessage() {
+var clearMessage = function() {
     statusDisplayed = false;
     if (typeof(foundSheep) == "undefined") {
         statusbox.html("");
@@ -130,13 +130,13 @@ function clearMessage() {
     }
 }
 
-function updateDisplay() {
+var updateDisplay = function() {
     if (statusDisplayed === true) {
         displaySheepStatus();
     }
 }
 
-function displaySheepStatus() {
+var displaySheepStatus = function() {
     statusDisplayed = true;
     var button = $("<input type='button' value='rename'>")
         .click(function () {displayRename(activeSheep[foundSheep].name) });
@@ -144,7 +144,7 @@ function displaySheepStatus() {
     statusbox.append("<p>State: " + activeSheep[foundSheep].state + "</p>");
 }
 
-function displayRename(str) {
+var displayRename = function(str) {
     statusDisplayed = false;
     statusbox.text("");
     var renamebutton = $("<input type='button' value='rename'>")
@@ -157,16 +157,16 @@ function displayRename(str) {
         .append(renamebutton).append(cancelbutton);
 }
 
-function sendRename(str) {
+var sendRename = function(str) {
     conn.sendCheck("(rename " + activeSheep[foundSheep].id + " \"" + str + "\")");
     clearMessage();
 }
 
-function generateSheep() {
+var generateSheep = function() {
     conn.sendCheck("(gen-sheep)");
 }
 
-function decode(data) {
+var decode = function(data) {
     var result = [];
     var state = "out";
     for (var i = 0; i < data.length; i++) {
@@ -224,7 +224,7 @@ function decode(data) {
     return result
 }
 
-function Sheep(msg) {
+var Sheep = function(msg) {
     if (msg[0] !== "sheep" || msg.length !== 6) {
         console.log("bad sheep message " + msg);
         return undefined;
@@ -241,7 +241,7 @@ function Sheep(msg) {
     };
 }
 
-function Mouse(msg) {
+var Mouse = function(msg) {
     if (msg[0] !== "mouse" || msg.length !== 4) {
         console.log("bad mouse message " + msg);
         return undefined;
@@ -256,7 +256,7 @@ function Mouse(msg) {
     }
 }
 
-function Fence(msg) {
+var Fence = function(msg) {
     if (msg[0] !== "fence" || msg.length !== 5) {
         console.log("bad fence message " + msg);
         return undefined;
@@ -270,7 +270,7 @@ function Fence(msg) {
     }
 }
 
-function processMessages(msgs) {
+var processMessages = function(msgs) {
     if (msgs.length === 0) {
         return;
     }
@@ -279,6 +279,7 @@ function processMessages(msgs) {
     activeSheep.keys = [];
     activeMice = {};
     activeMice.keys = [];
+    fences = [];
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         switch (msg[0]) {
@@ -307,7 +308,7 @@ function processMessages(msgs) {
     }
 }
 
-function drawScreen() {
+var drawScreen = function() {
     ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
     for (var i = 0; i < activeSheep.keys.length; i++) {
         var sheep = activeSheep[activeSheep.keys[i]];
@@ -324,7 +325,7 @@ function drawScreen() {
     }
 }
 
-function loop() {
+var loop = function() {
     if (running === true) {
         processMessages(serverMessages);
         serverMessages = getLast(serverMessages) // Preserve last message
@@ -333,7 +334,7 @@ function loop() {
 }
 
 // Does not modify msgs.
-function getLast(msgs) {
+var getLast = function(msgs) {
     var clone = msgs.slice(0);
     var result = [];
     var check = {};
@@ -351,7 +352,7 @@ function getLast(msgs) {
     return result
 }
 
-function Conn(ip) {
+var Conn = function(ip) {
     c = new WebSocket(ip);
     c.onclose = function() {
         running = false;
@@ -376,7 +377,7 @@ function Conn(ip) {
     return c
 }
 
-function getMousePos(canvas, evt) {
+var getMousePos = function(canvas, evt) {
     var rect = canvas.getBoundingClientRect();
     return {
         x: Math.floor(evt.clientX - rect.left),
@@ -384,7 +385,7 @@ function getMousePos(canvas, evt) {
     };
 }
 
-function sendMouseMove(evt, ctx, conn) {
+var sendMouseMove = function(evt, ctx, conn) {
     var pos = getMousePos(ctx.canvas, evt);
     conn.sendCheck("(mouse " + pos.x + " " + pos.y + ")");
 }
