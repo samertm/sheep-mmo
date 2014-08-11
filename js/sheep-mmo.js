@@ -28,7 +28,7 @@ var fences = [];
 // Global message to show on the canvas
 var serverMessages = [];
 
-var sheepDiffAttributes = ["name"];
+var sheepDiffAttributes = ["name", "state"];
 
 var statusDisplayed = false;
 var running = true;
@@ -141,6 +141,7 @@ function displaySheepStatus() {
     var button = $("<input type='button' value='rename'>")
         .click(function () {displayRename(activeSheep[foundSheep].name) });
     statusbox.text("Name: " + activeSheep[foundSheep].name).append(button);
+    statusbox.append("<p>State: " + activeSheep[foundSheep].state + "</p>");
 }
 
 function displayRename(str) {
@@ -224,7 +225,7 @@ function decode(data) {
 }
 
 function Sheep(msg) {
-    if (msg[0] !== "sheep" || msg.length !== 5) {
+    if (msg[0] !== "sheep" || msg.length !== 6) {
         console.log("bad sheep message " + msg);
         return undefined;
     }
@@ -234,6 +235,7 @@ function Sheep(msg) {
         x: parseInt(msg[2]),
         y: parseInt(msg[3]),
         name: msg[4],
+        state: msg[5],
         width: images["sheep"].width,
         height: images["sheep"].height,
     };

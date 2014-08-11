@@ -18,6 +18,7 @@ type sheep struct {
 	bounceUp      bool
 	state         sheepState
 	proximate     []*sheep
+	talkingTo *sheep
 }
 
 type sheepState int
@@ -26,6 +27,7 @@ const (
 	thinking sheepState = iota
 	startMoving
 	moving
+	talking
 )
 
 func (s sheepState) String() string {
@@ -37,6 +39,8 @@ func (s sheepState) String() string {
 		str = "startMoving"
 	case moving:
 		str = "moving"
+	case talking:
+		str = "talking"
 	}
 	return str
 }
@@ -89,16 +93,26 @@ func (s *sheep) action() {
 	s.proximate = proximateSheep(s, Board.actors)
 	switch s.state {
 	case thinking:
-		//log.Println("thinking")
 		if rand.Intn(25) == 0 {
 			s.state = startMoving
+			return
+		}
+		if len(s.proximate) != 0 && rand.Intn(10) == 0 {
+			for _, sheep := range s.proximate {
+				if sheep.state == thinking {
+					sheep.state = talking
+					s.state = talking
+					sheep.talkingTo = s
+					s.talkingTo = sheep
+					break
+				}
+			}
+			return
 		}
 	case startMoving:
-		//log.Println("start")
 		s.pickDestination()
 		s.state = moving
 	case moving:
-		//log.Println("moving")
 		if s.arrived() {
 			s.state = thinking
 			return
@@ -108,6 +122,15 @@ func (s *sheep) action() {
 		if collides(s, toCollidableSlice(Board.objects)) {
 			s.x, s.y, s.showX, s.showY = x, y, showX, showY
 			s.state = thinking
+		}
+	case talking:
+		if rand.Intn(50) == 0 {
+			otherSheep := s.talkingTo
+			otherSheep.state = thinking
+			otherSheep.talkingTo = nil
+			s.state = thinking
+			s.talkingTo = nil
+			return
 		}
 	}
 }
@@ -202,7 +225,7 @@ func (s sheep) boundingBox() box {
 }
 
 func (s sheep) data() []byte {
-	return []byte(fmt.Sprintf(`(sheep %d %d %d "%s")`, s.id, s.showX, s.showY, s.name))
+	return []byte(fmt.Sprintf(`(sheep %d %d %d "%s" %s)`, s.id, s.showX, s.showY, s.name, s.state))
 }
 
 func Rename(id int, name string) {
