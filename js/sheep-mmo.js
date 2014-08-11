@@ -23,6 +23,8 @@ var ctx = canvas[0].getContext("2d");
 var activeSheep = {};
 // All other players' mouse positions
 var activeMice = {};
+// All talk bubbles
+var talkBubble = {};
 // All fences
 var fences = [];
 // Global message to show on the canvas
@@ -290,6 +292,15 @@ var processMessages = function(msgs) {
             }
             activeSheep[sheep.id] = sheep;
             activeSheep.keys.push(sheep.id);
+            if (sheep.state == "talking") {
+                if (typeof(talkBubble[sheep.id]) === "undefined") {
+                    talkBubble[sheep.id] = {
+                        "left": 50,
+                        "x": sheep.x,
+                        "y": sheep.y,
+                    };
+                }
+            }
             break;
         case "mouse":
             var mouse = new Mouse(msg);
@@ -313,6 +324,19 @@ var drawScreen = function() {
     for (var i = 0; i < activeSheep.keys.length; i++) {
         var sheep = activeSheep[activeSheep.keys[i]];
         ctx.drawImage(images["sheep"], sheep.x, sheep.y);
+    }
+    for (var i in talkBubble) {
+        if (typeof(talkBubble[i]) === "undefined") {
+            continue;
+        }
+        if (talkBubble[i].left === 0) {
+            talkBubble[i] = undefined;
+            continue;
+        }
+        talkBubble[i].left--;
+        ctx.fillStyle = "#000000";
+        ctx.font = "10pt Calibri";
+        ctx.fillText("baa", talkBubble[i].x, talkBubble[i].y);
     }
     for (var i = 0; i < activeMice.keys.length; i++) {
         var sheep = activeMice[activeMice.keys[i]];
