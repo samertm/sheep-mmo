@@ -30,29 +30,29 @@ type dataer interface {
 type board struct {
 	// The top left corner of the board is (0, 0). Grows in both
 	// directions.
-	Width, Height int
-	Actors        []actor
-	Objects       []object
+	width, height int
+	actors        []actor
+	objects       []object
 }
 
 const (
-	BoardHeight = 512
-	BoardWidth  = 768
+	boardHeight = 768
+	boardWidth = 512
 )
 
 func newBoard() *board {
 	return &board{
-		Width:   BoardWidth,
-		Height:  BoardHeight,
-		Actors:  []actor{newSheep()},
-		Objects: []object{fence{x: 50, y: 50, width: 25, height: 25}},
+		width:   boardWidth,
+		height:  boardHeight,
+		actors:  make([]actor, 0, 1),
+		objects: make([]object, 0, 1),
 	}
 }
 
 var Board *board
 
 func (b *board) getSheep(id int) (*sheep, error) {
-	for _, a := range b.Actors {
+	for _, a := range b.actors {
 		if s, ok := a.(*sheep); ok {
 			if s.id == id {
 				return s, nil
@@ -64,6 +64,8 @@ func (b *board) getSheep(id int) (*sheep, error) {
 
 func init() {
 	Board = newBoard()
+	Board.actors = append(Board.actors, newSheep())
+	Board.objects = append(Board.objects, fence{50,50,25,25})
 }
 
 type mWrapper struct {
@@ -84,7 +86,7 @@ func (m mWrapper) Client() *client.C {
 }
 
 func GenSheep() {
-	Board.Actors = append(Board.Actors, newSheep())
+	Board.actors = append(Board.actors, newSheep())
 }
 
 func toDataerSlice(os interface{}) []dataer {
@@ -118,8 +120,8 @@ func IterDataers(slices ...interface{}) <-chan dataer {
 
 // TODO: Rename to "Messages"?
 func CreateMessages() []message.M {
-	messages := make([]message.M, 0, len(Board.Actors)+len(Board.Objects))
-	for d := range IterDataers(Board.Actors, Board.Objects) {
+	messages := make([]message.M, 0, len(Board.actors)+len(Board.objects))
+	for d := range IterDataers(Board.actors, Board.objects) {
 		messages = append(messages, mWrapper{data: d.data()})
 	}
 	return messages
@@ -152,19 +154,25 @@ func middle(b box) pair {
 	return pair{int((2*b.x + b.width) / 2), int((2*b.y + b.height) / 2)}
 }
 
-func collision(c0, c1 collidable) bool {
+func proximate(c0, c1 collidable, distance int) bool {
 	c0box := c0.boundingBox()
 	c1box := c1.boundingBox()
 	c0mid := middle(c0box)
 	c1mid := middle(c1box)
 	// If the distance from c0mid to c1mid is less than the distance of
 	// c0mid plus half the width/height of c0 and c1, then the objects
-	// intersect.
-	if int(math.Abs(float64(c1mid.x - c0mid.x))) < (c0box.width + c1box.width) / 2 &&
-		int(math.Abs(float64(c1mid.y - c1mid.y))) < (c0box.height + c1box.height) / 2 {
+	// intersect. Add `distance' to the second number, so that we can
+	// adjust how close we can be to this other object before we 
+	// determinte that we are proximate to it.
+	if int(math.Abs(float64(c1mid.x-c0mid.x))) < (c0box.width+c1box.width)/2 + distance &&
+		int(math.Abs(float64(c1mid.y-c1mid.y))) < (c0box.height+c1box.height)/2 + distance {
 		return true
 	}
-	 return false
+	return false
+}
+
+func collision(c0, c1 collidable) bool {
+	return proximate(c0, c1, 0)
 }
 
 func collides(c collidable, cs []collidable) bool {
@@ -177,7 +185,7 @@ func collides(c collidable, cs []collidable) bool {
 }
 
 func Tick() {
-	for _, a := range Board.Actors {
+	for _, a := range Board.actors {
 		a.action()
 	}
 }

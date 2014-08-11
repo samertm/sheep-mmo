@@ -28,8 +28,8 @@ const (
 )
 
 const (
-	SheepHeight = 40
-	SheepWidth  = 38
+	sheepHeight = 40
+	sheepWidth  = 38
 )
 
 func init() {
@@ -41,10 +41,10 @@ var sheepId int
 func newSheep() *sheep {
 	s := &sheep{
 		id:       sheepId,
-		x:        rand.Intn(BoardWidth - SheepWidth),
-		y:        rand.Intn(BoardHeight - SheepHeight),
-		height:   SheepHeight,
-		width:    SheepWidth,
+		x:        rand.Intn(Board.width - sheepWidth),
+		y:        rand.Intn(Board.height - sheepHeight),
+		height:   sheepHeight,
+		width:    sheepWidth,
 		bounceUp: true,
 		name:     "Sheepy",
 		state:    thinking,
@@ -77,7 +77,7 @@ func (s *sheep) action() {
 		}
 		x, y, showX, showY := s.x, s.y, s.showX, s.showY
 		s.walk()
-		if collides(s, toCollidableSlice(Board.Objects)) {
+		if collides(s, toCollidableSlice(Board.objects)) {
 			s.x, s.y, s.showX, s.showY = x, y, showX, showY
 			s.state = thinking
 		}
@@ -96,23 +96,23 @@ func (s *sheep) pickDestination() {
 }
 
 func (s *sheep) correctBounds() {
-	if s.x >= BoardWidth-SheepWidth {
-		s.x = BoardWidth - SheepWidth - 1
+	if s.x >= Board.width-s.width {
+		s.x = Board.width - s.width - 1
 	} else if s.x < 0 {
 		s.x = 0
 	}
-	if s.destX >= BoardWidth-SheepWidth {
-		s.destX = BoardWidth - SheepWidth - 1
+	if s.destX >= Board.width-s.width {
+		s.destX = Board.width - s.width - 1
 	} else if s.destX < 0 {
 		s.destX = 0
 	}
-	if s.y >= BoardHeight-SheepHeight {
-		s.y = BoardHeight - SheepHeight - 1
+	if s.y >= Board.height-s.height {
+		s.y = Board.height - s.height - 1
 	} else if s.y < 0 {
 		s.y = 0
 	}
-	if s.destY >= BoardHeight-SheepHeight {
-		s.destY = BoardHeight - SheepHeight - 1
+	if s.destY >= Board.height-s.height {
+		s.destY = Board.height - s.height - 1
 	} else if s.destY < 0 {
 		s.destY = 0
 	}
