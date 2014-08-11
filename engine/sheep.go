@@ -46,7 +46,7 @@ func newSheep() *sheep {
 		height:   SheepHeight,
 		width:    SheepWidth,
 		bounceUp: true,
-		name:     "Mr. Sheep",
+		name:     "Sheepy",
 		state:    thinking,
 	}
 	sheepId++
@@ -58,7 +58,7 @@ func newSheep() *sheep {
 }
 
 // TODO: finishMoving state, to end a bounce cleanly.
-func (s *sheep) Action() {
+func (s *sheep) action() {
 	switch s.state {
 	case thinking:
 		//log.Println("thinking")
@@ -151,23 +151,11 @@ func (s *sheep) walk() {
 	}
 }
 
-func (s sheep) X() int {
-	return s.x
+func (s sheep) boundingBox() box {
+	return box{x: s.x, y: s.y, width: s.width, height: s.height}
 }
 
-func (s sheep) Y() int {
-	return s.y
-}
-
-func (s sheep) Height() int {
-	return s.height
-}
-
-func (s sheep) Width() int {
-	return s.width
-}
-
-func (s sheep) Data() []byte {
+func (s sheep) data() []byte {
 	return []byte(fmt.Sprintf(`(sheep %d %d %d "%s")`, s.id, s.showX, s.showY, s.name))
 }
 

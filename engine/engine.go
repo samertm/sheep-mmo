@@ -8,34 +8,31 @@ import (
 	"github.com/samertm/sheep-mmo/server/message"
 )
 
-type Actor interface {
-	Dataer
-	Collidable
-	Action()
+type actor interface {
+	dataer
+	collidable
+	action()
 }
 
-type Object interface {
-	Dataer
-	Collidable
+type object interface {
+	dataer
+	collidable
 }
 
-type Collidable interface {
-	X() int
-	Y() int
-	Width() int
-	Height() int
+type collidable interface {
+	boundingBox() box
 }
 
-type Dataer interface {
-	Data() []byte
+type dataer interface {
+	data() []byte
 }
 
 type board struct {
 	// The top left corner of the board is (0, 0). Grows in both
 	// directions.
 	Width, Height int
-	Actors        []Actor
-	Objects       []Object
+	Actors        []actor
+	Objects       []object
 }
 
 const (
@@ -47,8 +44,8 @@ func newBoard() *board {
 	return &board{
 		Width:   BoardWidth,
 		Height:  BoardHeight,
-		Actors:  []Actor{newSheep()},
-		Objects: []Object{fence{x: 50, y: 50, width: 25, height: 25}},
+		Actors:  []actor{newSheep()},
+		Objects: []object{fence{x: 50, y: 50, width: 25, height: 25}},
 	}
 }
 
@@ -90,14 +87,14 @@ func GenSheep() {
 	Board.Actors = append(Board.Actors, newSheep())
 }
 
-func toDataerSlice(os interface{}) []Dataer {
-	ds := make([]Dataer, 0)
+func toDataerSlice(os interface{}) []dataer {
+	ds := make([]dataer, 0)
 	switch iter := os.(type) {
-	case []Actor:
+	case []actor:
 		for _, d := range iter {
 			ds = append(ds, d)
 		}
-	case []Object:
+	case []object:
 		for _, d := range iter {
 			ds = append(ds, d)
 		}
@@ -105,8 +102,8 @@ func toDataerSlice(os interface{}) []Dataer {
 	return ds
 }
 
-func IterDataers(slices ...interface{}) <-chan Dataer {
-	c := make(chan Dataer)
+func IterDataers(slices ...interface{}) <-chan dataer {
+	c := make(chan dataer)
 	go func() {
 		defer close(c)
 		for _, slice := range slices {
@@ -123,7 +120,7 @@ func IterDataers(slices ...interface{}) <-chan Dataer {
 func CreateMessages() []message.M {
 	messages := make([]message.M, 0, len(Board.Actors)+len(Board.Objects))
 	for d := range IterDataers(Board.Actors, Board.Objects) {
-		messages = append(messages, mWrapper{data: d.Data()})
+		messages = append(messages, mWrapper{data: d.data()})
 	}
 	return messages
 }
@@ -132,14 +129,18 @@ type pair struct {
 	x, y int
 }
 
-func toCollidableSlice(others interface{}) []Collidable {
-	result := make([]Collidable, 0)
+type box struct {
+	x, y, width, height int
+}
+
+func toCollidableSlice(others interface{}) []collidable {
+	result := make([]collidable, 0)
 	switch os := others.(type) {
-	case []Object:
+	case []object:
 		for _, o := range os {
 			result = append(result, o)
 		}
-	case []Actor:
+	case []actor:
 		for _, o := range os {
 			result = append(result, o)
 		}
@@ -147,24 +148,26 @@ func toCollidableSlice(others interface{}) []Collidable {
 	return result
 }
 
-func middle(c Collidable) pair {
-	return pair{int((2*c.X() + c.Width()) / 2), int((2*c.Y() + c.Height()) / 2)}
+func middle(b box) pair {
+	return pair{int((2*b.x + b.width) / 2), int((2*b.y + b.height) / 2)}
 }
 
-func collision(c0, c1 Collidable) bool {
-	c0mid := middle(c0)
-	c1mid := middle(c1)
+func collision(c0, c1 collidable) bool {
+	c0box := c0.boundingBox()
+	c1box := c1.boundingBox()
+	c0mid := middle(c0box)
+	c1mid := middle(c1box)
 	// If the distance from c0mid to c1mid is less than the distance of
 	// c0mid plus half the width/height of c0 and c1, then the objects
 	// intersect.
-	if int(math.Abs(float64(c1mid.x - c0mid.x))) < (c0.Width() + c1.Width()) / 2 &&
-		int(math.Abs(float64(c1mid.y - c1mid.y))) < (c0.Height() + c1.Height()) / 2 {
+	if int(math.Abs(float64(c1mid.x - c0mid.x))) < (c0box.width + c1box.width) / 2 &&
+		int(math.Abs(float64(c1mid.y - c1mid.y))) < (c0box.height + c1box.height) / 2 {
 		return true
 	}
 	 return false
 }
 
-func collides(c Collidable, cs []Collidable) bool {
+func collides(c collidable, cs []collidable) bool {
 	for _, coll := range cs {
 		if collision(c, coll) {
 			return true
@@ -175,6 +178,6 @@ func collides(c Collidable, cs []Collidable) bool {
 
 func Tick() {
 	for _, a := range Board.Actors {
-		a.Action()
+		a.action()
 	}
 }
