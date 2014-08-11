@@ -12,6 +12,6 @@ func main() {
 	hostname := flag.String("hostname", "localhost", "the hostname")
 	port := flag.Int("port", 4977, "the port")
 	flag.Parse()
-	fmt.Printf("Listening on ws://%s:%d", *hostname, *port)
+	fmt.Printf("Listening on ws://%s:%d\n", *hostname, *port)
 	server.ListenAndServe((*hostname) + ":" + strconv.Itoa(*port))
 }
