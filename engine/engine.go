@@ -36,8 +36,8 @@ type board struct {
 }
 
 const (
-	boardHeight = 768
-	boardWidth = 512
+	boardHeight = 512
+	boardWidth  = 768
 )
 
 func newBoard() *board {
@@ -65,7 +65,12 @@ func (b *board) getSheep(id int) (*sheep, error) {
 func init() {
 	Board = newBoard()
 	Board.actors = append(Board.actors, newSheep())
-	Board.objects = append(Board.objects, fence{50,50,25,25})
+	Board.objects = append(Board.objects, fence{
+		x:      0,
+		y:      0,
+		width:  200,
+		height: 250,
+	})
 }
 
 type mWrapper struct {
@@ -127,12 +132,17 @@ func CreateMessages() []message.M {
 	return messages
 }
 
-type pair struct {
-	x, y int
+type floatPair struct {
+	x, y float64
 }
 
 type box struct {
 	x, y, width, height int
+}
+
+// Hack so that boxes can be used as collidables.
+func (b box) boundingBox() box {
+	return b
 }
 
 func toCollidableSlice(others interface{}) []collidable {
@@ -150,8 +160,8 @@ func toCollidableSlice(others interface{}) []collidable {
 	return result
 }
 
-func middle(b box) pair {
-	return pair{int((2*b.x + b.width) / 2), int((2*b.y + b.height) / 2)}
+func middle(b box) floatPair {
+	return floatPair{float64((2*b.x + b.width) / 2), float64((2*b.y + b.height) / 2)}
 }
 
 func proximate(c0, c1 collidable, distance int) bool {
@@ -159,13 +169,17 @@ func proximate(c0, c1 collidable, distance int) bool {
 	c1box := c1.boundingBox()
 	c0mid := middle(c0box)
 	c1mid := middle(c1box)
+	xmiddist := math.Abs(c1mid.x - c0mid.x)
+	ymiddist := math.Abs(c1mid.y - c0mid.y)
+	widthdist := float64((c0box.width+c1box.width)/2 + distance)
+	heightdist := float64((c0box.height+c1box.height)/2 + distance)
 	// If the distance from c0mid to c1mid is less than the distance of
 	// c0mid plus half the width/height of c0 and c1, then the objects
 	// intersect. Add `distance' to the second number, so that we can
-	// adjust how close we can be to this other object before we 
+	// adjust how close we can be to this other object before we
 	// determinte that we are proximate to it.
-	if int(math.Abs(float64(c1mid.x-c0mid.x))) < (c0box.width+c1box.width)/2 + distance &&
-		int(math.Abs(float64(c1mid.y-c1mid.y))) < (c0box.height+c1box.height)/2 + distance {
+	// TODO: fix this, it ain't workin'
+	if xmiddist < widthdist && ymiddist < heightdist {
 		return true
 	}
 	return false

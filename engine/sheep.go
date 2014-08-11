@@ -38,11 +38,22 @@ func init() {
 
 var sheepId int
 
+func nonColliding(xrange, yrange int) (x int, y int) {
+	b := box{rand.Intn(xrange), rand.Intn(yrange), 1, 1}
+	collidables := toCollidableSlice(Board.objects)
+	// Pick a new box if there's a collision
+	for collides(b, collidables) {
+		b = box{rand.Intn(xrange), rand.Intn(yrange), 1, 1}
+	}
+	return b.x, b.y
+}
+
 func newSheep() *sheep {
+	x, y := nonColliding(Board.width-sheepWidth, Board.height-sheepHeight)
 	s := &sheep{
 		id:       sheepId,
-		x:        rand.Intn(Board.width - sheepWidth),
-		y:        rand.Intn(Board.height - sheepHeight),
+		x:        x,
+		y:        y,
 		height:   sheepHeight,
 		width:    sheepWidth,
 		bounceUp: true,
@@ -151,8 +162,10 @@ func (s *sheep) walk() {
 	}
 }
 
+// Bounding box only covers the lower half of the sheep.
 func (s sheep) boundingBox() box {
-	return box{x: s.x, y: s.y, width: s.width, height: s.height}
+	halfHeight := s.height / 2
+	return box{x: s.x, y: s.y + halfHeight, width: s.width, height: halfHeight}
 }
 
 func (s sheep) data() []byte {
