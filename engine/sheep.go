@@ -17,6 +17,7 @@ type sheep struct {
 	name          string
 	bounceUp      bool
 	state         sheepState
+	proximate     []*sheep
 }
 
 type sheepState int
@@ -27,9 +28,23 @@ const (
 	moving
 )
 
+func (s sheepState) String() string {
+	var str string
+	switch s {
+	case thinking:
+		str = "thinking"
+	case startMoving:
+		str = "startMoving"
+	case moving:
+		str = "moving"
+	}
+	return str
+}
+
 const (
-	sheepHeight = 40
-	sheepWidth  = 38
+	sheepHeight            = 40
+	sheepWidth             = 38
+	sheepProximateDistance = 40
 )
 
 func init() {
@@ -51,14 +66,15 @@ func nonColliding(xrange, yrange int) (x int, y int) {
 func newSheep() *sheep {
 	x, y := nonColliding(Board.width-sheepWidth, Board.height-sheepHeight)
 	s := &sheep{
-		id:       sheepId,
-		x:        x,
-		y:        y,
-		height:   sheepHeight,
-		width:    sheepWidth,
-		bounceUp: true,
-		name:     "Sheepy",
-		state:    thinking,
+		id:        sheepId,
+		x:         x,
+		y:         y,
+		height:    sheepHeight,
+		width:     sheepWidth,
+		bounceUp:  true,
+		name:      "Sheepy",
+		state:     thinking,
+		proximate: make([]*sheep, 0),
 	}
 	sheepId++
 	s.destX = s.x
@@ -70,6 +86,7 @@ func newSheep() *sheep {
 
 // TODO: finishMoving state, to end a bounce cleanly.
 func (s *sheep) action() {
+	s.proximate = proximateSheep(s, Board.actors)
 	switch s.state {
 	case thinking:
 		//log.Println("thinking")
@@ -93,6 +110,22 @@ func (s *sheep) action() {
 			s.state = thinking
 		}
 	}
+}
+
+func proximateSheep(s *sheep, actors []actor) []*sheep {
+	distance := sheepProximateDistance // global
+	proximates := make([]*sheep, 0)
+	for _, a := range actors {
+		if a == s {
+			continue
+		}
+		if otherSheep, ok := a.(*sheep); ok {
+			if proximate(s, otherSheep, distance) {
+				proximates = append(proximates, otherSheep)
+			}
+		}
+	}
+	return proximates
 }
 
 func (s sheep) arrived() bool {
