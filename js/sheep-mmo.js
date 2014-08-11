@@ -295,9 +295,9 @@ var processMessages = function(msgs) {
             if (sheep.state == "talking") {
                 if (typeof(talkBubble[sheep.id]) === "undefined") {
                     talkBubble[sheep.id] = {
-                        "left": 50,
-                        "x": sheep.x,
-                        "y": sheep.y,
+                        "left": 100 + Math.floor(Math.random() * 50),
+                        "x": sheep.x + (12 - Math.floor(Math.random() * 25)),
+                        "y": sheep.y + (12 - Math.floor(Math.random() * 25)),
                     };
                 }
             }
@@ -321,6 +321,11 @@ var processMessages = function(msgs) {
 
 var drawScreen = function() {
     ctx.clearRect(0, 0, $(canvas)[0].width, $(canvas)[0].height);
+    for (var i = 0; i < fences.length; i++) {
+        var fence = fences[i];
+        ctx.fillStyle = "#804000";
+        ctx.fillRect(fence.x, fence.y, fence.width, fence.height);
+    }
     for (var i = 0; i < activeSheep.keys.length; i++) {
         var sheep = activeSheep[activeSheep.keys[i]];
         ctx.drawImage(images["sheep"], sheep.x, sheep.y);
@@ -335,17 +340,12 @@ var drawScreen = function() {
         }
         talkBubble[i].left--;
         ctx.fillStyle = "#000000";
-        ctx.font = "10pt Calibri";
+        ctx.font = "bold 10pt Calibri";
         ctx.fillText("baa", talkBubble[i].x, talkBubble[i].y);
     }
     for (var i = 0; i < activeMice.keys.length; i++) {
         var sheep = activeMice[activeMice.keys[i]];
         ctx.drawImage(images["mouse"], sheep.x, sheep.y);
-    }
-    for (var i = 0; i < fences.length; i++) {
-        var fence = fences[i];
-        ctx.fillStyle = "#804000";
-        ctx.fillRect(fence.x, fence.y, fence.width, fence.height);
     }
 }
 
