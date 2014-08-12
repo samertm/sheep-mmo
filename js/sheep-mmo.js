@@ -153,7 +153,6 @@ var updateDisplay = function(diffs) {
 
 var displaySheepStatus = function(diffs) {
     statusDisplayed = true;
-    console.log(diffs);
     if (typeof(diffs) === "undefined") {
         displaySheepName();
         displaySheepState();
