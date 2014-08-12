@@ -9,10 +9,13 @@ var host = "localhost";
 var port = "4977";
 var ip = scheme + host + ":" + port;
 
-var statusbox = $("#status-box");
-var statusstatic = $("#status-static")
+var statusstatic = $("#status-box")
+    .append($("<div id='name'></div>" +
+              "<div id='state'></div>"))
     .append($("<input type=button value='Gen Sheep'>")
             .click(function() { generateSheep() }));
+var namebox = $("#name");
+var statebox = $("#state");
 
 var canvas = $('#screen')
 canvas[0].width = board_width * offset;
@@ -23,6 +26,7 @@ var ctx = canvas[0].getContext("2d");
 var activeSheep = {};
 // All other players' mouse positions
 var activeMice = {};
+var oldActiveSheep = {};
 // All talk bubbles
 var talkBubble = {};
 // All fences
@@ -108,54 +112,81 @@ var processMouseClick = function(evt, ctx, conn) {
     }
 }
 
-// Returns true if they're different, false if they're the same.
-var sheepDiff = function(sheep0, sheep1) {
+// Returns an object with each attribute as a key. The value at the
+// attribute is true if there is a difference, or false if there
+// isn't.
+var sheepDiff = function(diffs, sheep0, sheep1) {
     if (typeof(sheep0) === "undefined" ||
-        typeof(sheep1) === "undefined") {
-        return false;
+        typeof(sheep1) === "undefined" ||
+        sheep0.id !== sheep1.id) {
+        console.log("sheepDiff error:", sheep0, sheep1);
+        return undefined;
+    }
+    if (typeof(diffs[sheep0.id]) === "undefined") {
+        diffs[sheep0.id] = {};
     }
     for (var i = 0; i < sheepDiffAttributes.length; i++) {
         var attr = sheepDiffAttributes[i];
         if (sheep0[attr] !== sheep1[attr]) {
-            return true;
+            diffs[sheep0.id][attr] = true;
+        } else {
+            diffs[sheep0.id][attr] = false;
         }
     }
-    return false;
 }
 
 var clearMessage = function() {
     statusDisplayed = false;
     if (typeof(foundSheep) == "undefined") {
-        statusbox.html("");
+        namebox.html("");
+        statebox.text("");
     } else {
         displaySheepStatus();
     }
 }
 
-var updateDisplay = function() {
+var updateDisplay = function(diffs) {
     if (statusDisplayed === true) {
-        displaySheepStatus();
+        displaySheepStatus(diffs);
     }
 }
 
-var displaySheepStatus = function() {
+var displaySheepStatus = function(diffs) {
     statusDisplayed = true;
+    console.log(diffs);
+    if (typeof(diffs) === "undefined") {
+        displaySheepName();
+        displaySheepState();
+    } else {
+        if (diffs[foundSheep]["name"] === true) {
+            displaySheepName();
+        }
+        if (diffs[foundSheep]["state"] === true) {
+            displaySheepState();
+        }
+    }
+}
+
+var displaySheepName = function() {
     var button = $("<input type='button' value='rename'>")
         .click(function () {displayRename(activeSheep[foundSheep].name) });
-    statusbox.text("Name: " + activeSheep[foundSheep].name).append(button);
-    statusbox.append("<p>State: " + activeSheep[foundSheep].state + "</p>");
+    namebox.text("Name: " + activeSheep[foundSheep].name).append(button);
+}
+
+var displaySheepState = function() {
+    statebox.text("State: " + activeSheep[foundSheep].state);
 }
 
 var displayRename = function(str) {
     statusDisplayed = false;
-    statusbox.text("");
+    namebox.text("");
     var renamebutton = $("<input type='button' value='rename'>")
         .click(function() {
             sendRename($("#rename").val())
         });
     var cancelbutton = $("<input type='button' value='cancel'>")
         .click(function() {clearMessage()});
-    statusbox.append("<input id='rename' type='text' value='" + str + "'>")
+    namebox.append("<input id='rename' type='text' value='" + str + "'>")
         .append(renamebutton).append(cancelbutton);
 }
 
@@ -276,7 +307,8 @@ var processMessages = function(msgs) {
     if (msgs.length === 0) {
         return;
     }
-    var updated = false;
+    // All diffs
+    oldActiveSheep = activeSheep;
     activeSheep = {};
     activeSheep.keys = [];
     activeMice = {};
@@ -287,9 +319,6 @@ var processMessages = function(msgs) {
         switch (msg[0]) {
         case "sheep":
             var sheep = new Sheep(msg);
-            if (sheepDiff(sheep, activeSheep[sheep.id])) {
-                updated = true;
-            }
             activeSheep[sheep.id] = sheep;
             activeSheep.keys.push(sheep.id);
             if (sheep.state == "talking") {
@@ -314,9 +343,6 @@ var processMessages = function(msgs) {
     }
     activeSheep.keys.sort();
     activeMice.keys.sort();
-    if (updated === true) {
-        updateDisplay();
-    }
 }
 
 var drawScreen = function() {
@@ -326,10 +352,16 @@ var drawScreen = function() {
         ctx.fillStyle = "#804000";
         ctx.fillRect(fence.x, fence.y, fence.width, fence.height);
     }
+    var diffs = {};
     for (var i = 0; i < activeSheep.keys.length; i++) {
         var sheep = activeSheep[activeSheep.keys[i]];
         ctx.drawImage(images["sheep"], sheep.x, sheep.y);
+        var oldSheep = oldActiveSheep[activeSheep.keys[i]];
+        if (oldSheep) {
+            sheepDiff(diffs, sheep, oldSheep);
+        }
     }
+    updateDisplay(diffs);
     for (var i in talkBubble) {
         if (typeof(talkBubble[i]) === "undefined") {
             continue;
