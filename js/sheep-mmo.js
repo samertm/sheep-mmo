@@ -23,10 +23,10 @@ canvas[0].height = board_height * offset;
 var ctx = canvas[0].getContext("2d");
 
 // All sheep currently active
-var activeSheep = {};
+var activeSheep = {keys: []};
 // All other players' mouse positions
-var activeMice = {};
-var oldActiveSheep = {};
+var activeMice = {keys: []};
+var oldActiveSheep = {keys: []};
 // All talk bubbles
 var talkBubble = {};
 // All fences
