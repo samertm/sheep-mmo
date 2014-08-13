@@ -142,6 +142,7 @@ var enterFlowerMode = function() {
     domcontainer.text("");
     domcontainer.append("FLOWER</br>").append(flowermode);
     $("#status").click(function() { enterStatusMode() });
+    currentMode = "flower";
 }
 
 // Returns an object with each attribute as a key. The value at the
