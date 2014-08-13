@@ -9,13 +9,10 @@ var host = "localhost";
 var port = "4977";
 var ip = scheme + host + ":" + port;
 
-var statusstatic = $("#status-box")
-    .append($("<div id='name'></div>" +
-              "<div id='state'></div>"))
-    .append($("<input type=button value='Gen Sheep'>")
-            .click(function() { generateSheep() }));
-var namebox = $("#name");
-var statebox = $("#state");
+var domcontainer = $("#dom-container");
+
+// two modes: "status" and "flower"
+var currentMode = "";
 
 var canvas = $('#screen')
 canvas[0].width = board_width * offset;
@@ -62,22 +59,36 @@ window.onload = function() {
         return;
     }
 
+    enterStatusMode();
+
     // conn is a global :D javascript, yay
     conn = new Conn(ip, $(canvas)[0]);
     $(canvas).on("mousemove", function(evt) {
         sendMouseMove(evt, ctx, conn);
     });
     $(canvas).click(function(evt) {
-        processMouseClick(evt, ctx, conn);
+        processMouseClick(evt, currentMode, ctx);
     });
     var tick = 10;
     window.setInterval(loop, tick);
     
 }
 
-var processMouseClick = function(evt, ctx, conn) {
+var processMouseClick = function(evt, mode, ctx) {
     //console.log("processMouseClick fired");
     var pos = getMousePos(ctx.canvas, evt);
+    var fns = {
+        "status": processMouseClickStatus,
+        "flower": processMouseClickFlower,
+    }
+    fns[mode](pos);
+}
+
+var processMouseClickFlower = function(pos) {
+    return
+}
+
+var processMouseClickStatus = function(pos) {
     // just in case activeSheep gets clobbered in processMessages
     // TODO: are functions atomic? Ask Mary.
     var found = false;
@@ -112,6 +123,24 @@ var processMouseClick = function(evt, ctx, conn) {
     }
 }
 
+var enterStatusMode = function() {
+    var statusstatic = $("<div id='name'></div>" +
+                         "<div id='state'></div>" +
+                         "<input id='gensheep' type=button value='Gen Sheep'>" +
+                         "<input id='enterflower' type=button value='Flower Mode'>");
+    domcontainer.text("");
+    domcontainer.append("STATUS</br>").append(statusstatic);
+    $("#gensheep").click(function() { generateSheep() });
+    $("#enterflower").click(function() { enterFlowerMode() });
+    currentMode = "status";
+}
+
+var enterFlowerMode = function() {
+    var flowermode = $("<div id='flower-type'>yellow :)</div>");
+    domcontainer.text("");
+    domcontainer.append("FLOWER</br>").append(flowermode);
+}
+
 // Returns an object with each attribute as a key. The value at the
 // attribute is true if there is a difference, or false if there
 // isn't.
@@ -138,8 +167,8 @@ var sheepDiff = function(diffs, sheep0, sheep1) {
 var clearMessage = function() {
     statusDisplayed = false;
     if (typeof(foundSheep) == "undefined") {
-        namebox.html("");
-        statebox.text("");
+        $("#name").html("");
+        $("#state").text("");
     } else {
         displaySheepStatus();
     }
@@ -169,23 +198,23 @@ var displaySheepStatus = function(diffs) {
 var displaySheepName = function() {
     var button = $("<input type='button' value='rename'>")
         .click(function () {displayRename(activeSheep[foundSheep].name) });
-    namebox.text("Name: " + activeSheep[foundSheep].name).append(button);
+    $("#name").text("Name: " + activeSheep[foundSheep].name).append(button);
 }
 
 var displaySheepState = function() {
-    statebox.text("State: " + activeSheep[foundSheep].state);
+    $("#state").text("State: " + activeSheep[foundSheep].state);
 }
 
 var displayRename = function(str) {
     statusDisplayed = false;
-    namebox.text("");
+    $("#name").text("");
     var renamebutton = $("<input type='button' value='rename'>")
         .click(function() {
             sendRename($("#rename").val())
         });
     var cancelbutton = $("<input type='button' value='cancel'>")
         .click(function() {clearMessage()});
-    namebox.append("<input id='rename' type='text' value='" + str + "'>")
+    $("#name").append("<input id='rename' type='text' value='" + str + "'>")
         .append(renamebutton).append(cancelbutton);
 }
 
