@@ -58,11 +58,11 @@ func init() {
 var sheepId int
 
 func nonColliding(xrange, yrange int) (x int, y int) {
-	b := box{rand.Intn(xrange), rand.Intn(yrange), 1, 1}
+	b := box{rand.Intn(xrange), rand.Intn(yrange), sheepWidth, sheepHeight}
 	collidables := toCollidableSlice(Board.objects)
 	// Pick a new box if there's a collision
 	for collides(b, collidables) {
-		b = box{rand.Intn(xrange), rand.Intn(yrange), 1, 1}
+		b = box{rand.Intn(xrange), rand.Intn(yrange), sheepWidth, sheepHeight}
 	}
 	return b.x, b.y
 }

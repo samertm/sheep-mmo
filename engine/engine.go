@@ -64,13 +64,13 @@ func (b *board) getSheep(id int) (*sheep, error) {
 
 func init() {
 	Board = newBoard()
-	Board.actors = append(Board.actors, newSheep())
 	Board.objects = append(Board.objects, fence{
 		x:      200,
-		y:      0,
+		y:      100,
 		width:  50,
 		height: 250,
 	})
+	Board.actors = append(Board.actors, newSheep())
 }
 
 type mWrapper struct {
@@ -188,7 +188,7 @@ func proximate(c0, c1 collidable, distance int) bool {
 	// adjust how close we can be to this other object before we
 	// determinte that we are proximate to it.
 	// TODO: fix this, it ain't workin'
-	if xmiddist < widthdist && ymiddist < heightdist {
+	if xmiddist <= widthdist && ymiddist <= heightdist {
 		return true
 	}
 	return false
