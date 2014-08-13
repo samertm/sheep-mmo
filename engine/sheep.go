@@ -18,7 +18,7 @@ type sheep struct {
 	bounceUp      bool
 	state         sheepState
 	proximate     []*sheep
-	talkingTo *sheep
+	talkingTo     *sheep
 }
 
 type sheepState int

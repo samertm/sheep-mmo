@@ -94,6 +94,15 @@ func GenSheep() {
 	Board.actors = append(Board.actors, newSheep())
 }
 
+func AddFlower(x, y int) {
+	f := newFlower(x, y)
+	if f == nil {
+		//log.Printf("Invalid location for flower: %d, %d\n", x, y)
+		return
+	}
+	Board.objects = append(Board.objects, f)
+}
+
 func toDataerSlice(os interface{}) []dataer {
 	ds := make([]dataer, 0)
 	switch iter := os.(type) {
@@ -196,6 +205,11 @@ func collides(c collidable, cs []collidable) bool {
 		}
 	}
 	return false
+}
+
+func (b board) collisions(c collidable) bool {
+	return collides(c, toCollidableSlice(b.objects)) ||
+		collides(c, toCollidableSlice(b.actors))
 }
 
 func Tick() {

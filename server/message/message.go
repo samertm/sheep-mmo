@@ -117,6 +117,8 @@ func beg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
 		return renameMsg, c, msg[i+1:]
 	case "gen-sheep":
 		return gensheepMsg, c, msg[i+1:]
+	case "flower":
+		return flowerMsg, c, msg[i+1:]
 	default:
 		log.Println("Errored: " + string(msg))
 		return nil, nil, nil
@@ -231,4 +233,47 @@ func gensheepMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte
 	}
 	// TODO: fix this ):L
 	return start, c, msg
+}
+
+type Flower struct {
+	X, Y int
+}
+
+func (f Flower) Data() []byte {
+	return []byte("")
+}
+
+func (f Flower) Client() *client.C {
+	return nil
+}
+
+func (f Flower) Type() string {
+	return "flower"
+}
+
+// (flower \d \d)
+func flowerMsg(ch chan M, c *client.C, msg []byte) (stateFn, *client.C, []byte) {
+	var i int
+	for ; i < len(msg) && msg[i] != ' '; i++ {
+	}
+	x, err := strconv.Atoi(string(msg[:i]))
+	if err != nil {
+		log.Println("errored on 1: " + string(msg))
+		return nil, nil, nil
+	}
+	i++ // skip space
+	j := i
+	for ; j < len(msg) && msg[j] != ')'; j++ {
+	}
+	y, err := strconv.Atoi(string(msg[i:j]))
+	if err != nil {
+		log.Println("errored on 2: " + string(msg))
+		return nil, nil, nil
+	}
+	if msg[j] != ')' {
+		log.Println("errored " + string(msg))
+		return nil, nil, nil
+	}
+	ch <- Flower{X: x, Y: y}
+	return start, c, msg[i+1:]
 }

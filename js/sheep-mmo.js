@@ -28,6 +28,8 @@ var oldActiveSheep = {keys: []};
 var talkBubble = {};
 // All fences
 var fences = [];
+// All flowers
+var flowers = [];
 // Global message to show on the canvas
 var serverMessages = [];
 
@@ -67,28 +69,28 @@ window.onload = function() {
         sendMouseMove(evt, ctx, conn);
     });
     $(canvas).click(function(evt) {
-        processMouseClick(evt, currentMode, ctx);
+        processMouseClick(evt, currentMode, ctx, conn);
     });
     var tick = 10;
     window.setInterval(loop, tick);
     
 }
 
-var processMouseClick = function(evt, mode, ctx) {
+var processMouseClick = function(evt, mode, ctx, conn) {
     //console.log("processMouseClick fired");
     var pos = getMousePos(ctx.canvas, evt);
     var fns = {
         "status": processMouseClickStatus,
         "flower": processMouseClickFlower,
     }
-    fns[mode](pos);
+    fns[mode](pos, conn);
 }
 
-var processMouseClickFlower = function(pos) {
-    return
+var processMouseClickFlower = function(pos, conn) {
+    conn.sendCheck("(flower " + pos.x + " " + pos.y + ")");
 }
 
-var processMouseClickStatus = function(pos) {
+var processMouseClickStatus = function(pos, conn) {
     // just in case activeSheep gets clobbered in processMessages
     // TODO: are functions atomic? Ask Mary.
     var found = false;
@@ -335,6 +337,21 @@ var Fence = function(msg) {
     }
 }
 
+var Flower = function(msg) {
+    if (msg[0] !== "flower" || msg.length !== 4) {
+        console.log("bad flower message " + msg);
+        return undefined;
+    }
+    return {
+        type: "flower",
+        id: parseInt(msg[1]),
+        x: parseInt(msg[2]),
+        y: parseInt(msg[3]),
+        width: 30,
+        height: 30,
+    }
+}
+
 var processMessages = function(msgs) {
     if (msgs.length === 0) {
         return;
@@ -346,6 +363,7 @@ var processMessages = function(msgs) {
     activeMice = {};
     activeMice.keys = [];
     fences = [];
+    flowers = [];
     for (var i = 0; i < msgs.length; i++) {
         msg = msgs[i];
         switch (msg[0]) {
@@ -371,6 +389,9 @@ var processMessages = function(msgs) {
         case "fence":
             fences.push(Fence(msg));
             break;
+        case "flower":
+            flowers.push(Flower(msg));
+            break;
         }
     }
     activeSheep.keys.sort();
@@ -383,6 +404,11 @@ var drawScreen = function() {
         var fence = fences[i];
         ctx.fillStyle = "#804000";
         ctx.fillRect(fence.x, fence.y, fence.width, fence.height);
+    }
+    for (var i = 0; i < flowers.length; i++) {
+        var flower = flowers[i];
+        ctx.fillStyle = "#883399";
+        ctx.fillRect(flower.x, flower.y, flower.width, flower.height);
     }
     var diffs = {};
     for (var i = 0; i < activeSheep.keys.length; i++) {

@@ -55,11 +55,17 @@ func (h *hub) run() {
 					go func(m message.M) {
 						h.broadcast <- m
 					}(m)
-				} else if m.Type() == "rename" {
+					continue
+				}
+				switch m.Type() {
+				case "rename":
 					r := m.(message.Rename)
 					engine.Rename(r.Id, r.Name)
-				} else if m.Type() == "gen-sheep" {
+				case "gen-sheep":
 					engine.GenSheep()
+				case "flower":
+					f := m.(message.Flower)
+					engine.AddFlower(f.X, f.Y)
 				}
 			}
 		case <-h.tick:
