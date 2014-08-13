@@ -132,13 +132,16 @@ var enterStatusMode = function() {
     domcontainer.append("STATUS</br>").append(statusstatic);
     $("#gensheep").click(function() { generateSheep() });
     $("#enterflower").click(function() { enterFlowerMode() });
+    foundSheep = undefined;
     currentMode = "status";
 }
 
 var enterFlowerMode = function() {
-    var flowermode = $("<div id='flower-type'>yellow :)</div>");
+    var flowermode = $("<div id='flower-type'>yellow</div>" +
+                       "<input id='status' type='button' value='Status Mode'>");
     domcontainer.text("");
     domcontainer.append("FLOWER</br>").append(flowermode);
+    $("#status").click(function() { enterStatusMode() });
 }
 
 // Returns an object with each attribute as a key. The value at the
