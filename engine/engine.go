@@ -66,9 +66,9 @@ func init() {
 	Board = newBoard()
 	Board.actors = append(Board.actors, newSheep())
 	Board.objects = append(Board.objects, fence{
-		x:      0,
+		x:      200,
 		y:      0,
-		width:  200,
+		width:  50,
 		height: 250,
 	})
 }
