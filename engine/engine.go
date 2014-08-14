@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/samertm/sheep-mmo/server/client"
@@ -218,6 +219,20 @@ func (b board) collisions(c collidable) bool {
 	return collides(c, toCollidableSlice(b.noncollidable),
 		toCollidableSlice(b.collidable),
 		toCollidableSlice(b.actors))
+}
+
+func (b board) deleteFlower(id int) {
+	for i := range b.noncollidable {
+		if b.noncollidable[i].(*flower).id == id {
+			// // delete element
+			// copy(b.noncollidable[i:], b.noncollidable[i+1:])
+			// b.noncollidable[len(b.noncollidable)-1] = nil
+			// b.noncollidable = b.noncollidable[:len(b.noncollidable)-1]
+
+			fmt.Println("deleted flower :O")
+			return
+		}
+	}
 }
 
 func Tick() {

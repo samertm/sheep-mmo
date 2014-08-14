@@ -17,8 +17,10 @@ type sheep struct {
 	name          string
 	bounceUp      bool
 	state         sheepState
-	proximate     []*sheep
+	proximateSheep     []*sheep
+	proximateFlowers []*flower
 	talkingTo     *sheep
+	hunger        int
 }
 
 type sheepState int
@@ -28,6 +30,7 @@ const (
 	startMoving
 	moving
 	talking
+	hungry
 )
 
 func (s sheepState) String() string {
@@ -41,6 +44,8 @@ func (s sheepState) String() string {
 		str = "moving"
 	case talking:
 		str = "talking"
+	case hungry:
+		str = "hungry"
 	}
 	return str
 }
@@ -77,7 +82,9 @@ func newSheep() *sheep {
 		bounceUp:  true,
 		name:      "Sheepy",
 		state:     thinking,
-		proximate: make([]*sheep, 0),
+		proximateSheep: make([]*sheep, 0),
+		proximateFlowers: make([]*flower, 0),
+		hunger:    50,
 	}
 	sheepId++
 	s.destX = s.x
@@ -89,15 +96,23 @@ func newSheep() *sheep {
 
 // TODO: finishMoving state, to end a bounce cleanly.
 func (s *sheep) action() {
-	s.proximate = proximateSheep(s, Board.actors)
+	s.proximateSheep = findProximateSheep(s, Board.actors)
+	s.proximateFlowers = findProximateFlowers(s, Board.noncollidable)
 	switch s.state {
 	case thinking:
 		if rand.Intn(25) == 0 {
 			s.state = startMoving
 			return
 		}
-		if len(s.proximate) != 0 && rand.Intn(10) == 0 {
-			for _, sheep := range s.proximate {
+		if rand.Intn(15) == 0 {
+			if s.hunger > 0 {
+				s.hunger--
+			}
+		}
+		if s.hunger < 45 {
+			s.state = hungry
+		} else if len(s.proximateSheep) != 0 && rand.Intn(10) == 0 {
+			for _, sheep := range s.proximateSheep {
 				if sheep.state == thinking {
 					sheep.state = talking
 					s.state = talking
@@ -106,7 +121,6 @@ func (s *sheep) action() {
 					break
 				}
 			}
-			return
 		}
 	case startMoving:
 		s.pickDestination()
@@ -132,10 +146,19 @@ func (s *sheep) action() {
 			s.talkingTo = nil
 			return
 		}
+	case hungry:
+		if len(s.proximateFlowers) != 0 {
+			Board.deleteFlower(s.proximateFlowers[0].id)
+			s.hunger += 10
+		}
+		if s.hunger >= 45 {
+			s.state = thinking
+			return
+		}
 	}
 }
 
-func proximateSheep(s *sheep, actors []actor) []*sheep {
+func findProximateSheep(s *sheep, actors []actor) []*sheep {
 	distance := sheepProximateDistance // global
 	proximates := make([]*sheep, 0)
 	for _, a := range actors {
@@ -150,6 +173,20 @@ func proximateSheep(s *sheep, actors []actor) []*sheep {
 	}
 	return proximates
 }
+
+func findProximateFlowers(s *sheep, objs []object) []*flower {
+	distance := sheepProximateDistance // global
+	proximates := make([]*flower, 0)
+	for _, o := range objs {
+		if f, ok := o.(*flower); ok {
+			if proximate(s, f, distance) {
+				proximates = append(proximates, f)
+			}
+		}
+	}
+	return proximates
+}
+
 
 func (s sheep) arrived() bool {
 	return s.x == s.destX && s.y == s.destY
