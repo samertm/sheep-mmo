@@ -32,6 +32,7 @@ const (
 	moving
 	talking
 	hungry
+	attemptToEat
 )
 
 func (s sheepState) String() string {
@@ -47,6 +48,8 @@ func (s sheepState) String() string {
 		str = "talking"
 	case hungry:
 		str = "hungry"
+	case attemptToEat:
+		str = "attemptToEat"
 	}
 	return str
 }
@@ -113,7 +116,7 @@ func (s *sheep) action() {
 		if len(s.path) != 0 {
 			s.state = moving
 		} else if s.hunger < 45 {
-			s.state = hungry
+			s.state = attemptToEat
 		} else if len(s.proximateSheep) != 0 && rand.Intn(10) == 0 {
 			for _, sheep := range s.proximateSheep {
 				if sheep.state == thinking {
@@ -154,9 +157,9 @@ func (s *sheep) action() {
 			return
 		}
 	case hungry:
-		if len(s.proximateFlowers) != 0 {
-			Board.deleteFlower(s.proximateFlowers[0].id)
-			s.hunger += 25
+		if len(s.proximateSheep) != 0 {
+			s.state = attemptToEat
+			return
 		}
 		if s.hunger >= 45 {
 			s.state = thinking
@@ -170,7 +173,14 @@ func (s *sheep) action() {
 
 			}
 		}
-
+	case attemptToEat:
+		if len(s.proximateFlowers) != 0 {
+			Board.deleteFlower(s.proximateFlowers[0].id)
+			s.hunger += 25
+			s.state = thinking
+			return
+		}
+		s.state = hungry
 	}
 }
 
