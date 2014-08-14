@@ -139,7 +139,7 @@ var enterStatusMode = function() {
 }
 
 var enterFlowerMode = function() {
-    var flowermode = $("<div id='flower-type'>yellow</div>" +
+    var flowermode = $("<div id='flower-type'>purple</div>" +
                        "<input id='status' type='button' value='Status Mode'>");
     domcontainer.text("");
     domcontainer.append("FLOWER</br>").append(flowermode);
@@ -352,6 +352,15 @@ var Flower = function(msg) {
     }
 }
 
+var TalkMessage = function(sheep, message) {
+    return {
+        "message": message,
+        "left": 100 + Math.floor(Math.random() * 50),
+        "x": sheep.x + (12 - Math.floor(Math.random() * 25)),
+        "y": sheep.y + (12 - Math.floor(Math.random() * 25)),
+    }
+}
+
 var processMessages = function(msgs) {
     if (msgs.length === 0) {
         return;
@@ -371,14 +380,17 @@ var processMessages = function(msgs) {
             var sheep = new Sheep(msg);
             activeSheep[sheep.id] = sheep;
             activeSheep.keys.push(sheep.id);
-            if (sheep.state == "talking") {
+            switch (sheep.state) {
+            case "talking":
                 if (typeof(talkBubble[sheep.id]) === "undefined") {
-                    talkBubble[sheep.id] = {
-                        "left": 100 + Math.floor(Math.random() * 50),
-                        "x": sheep.x + (12 - Math.floor(Math.random() * 25)),
-                        "y": sheep.y + (12 - Math.floor(Math.random() * 25)),
-                    };
+                    talkBubble[sheep.id] = TalkMessage(sheep, "baa");
                 }
+                break;
+            case "hungry":
+                if (typeof(talkBubble[sheep.id]) === "undefined") {
+                    talkBubble[sheep.id] = TalkMessage(sheep, "im hungry");
+                }
+                break;
             }
             break;
         case "mouse":
@@ -431,7 +443,7 @@ var drawScreen = function() {
         talkBubble[i].left--;
         ctx.fillStyle = "#000000";
         ctx.font = "bold 10pt Calibri";
-        ctx.fillText("baa", talkBubble[i].x, talkBubble[i].y);
+        ctx.fillText(talkBubble[i].message, talkBubble[i].x, talkBubble[i].y);
     }
     for (var i = 0; i < activeMice.keys.length; i++) {
         var sheep = activeMice[activeMice.keys[i]];

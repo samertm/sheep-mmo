@@ -110,7 +110,9 @@ func (s *sheep) action() {
 				s.hunger--
 			}
 		}
-		if s.hunger < 45 {
+		if len(s.path) != 0 {
+			s.state = moving
+		} else if s.hunger < 45 {
 			s.state = hungry
 		} else if len(s.proximateSheep) != 0 && rand.Intn(10) == 0 {
 			for _, sheep := range s.proximateSheep {
@@ -154,7 +156,7 @@ func (s *sheep) action() {
 	case hungry:
 		if len(s.proximateFlowers) != 0 {
 			Board.deleteFlower(s.proximateFlowers[0].id)
-			s.hunger += 10
+			s.hunger += 25
 		}
 		if s.hunger >= 45 {
 			s.state = thinking
@@ -203,8 +205,8 @@ func findProximateFlowers(s *sheep, objs []object) []*flower {
 
 func (s sheep) arrived(dest pair) bool {
 	blur := 10
-	return s.x >= dest.x - blur && s.x <= dest.x + blur &&
-		s.y >= dest.y - blur && s.y <= dest.y + blur
+	return s.x >= dest.x-blur && s.x <= dest.x+blur &&
+		s.y >= dest.y-blur && s.y <= dest.y+blur
 }
 
 func (s sheep) pickDestination() pair {
@@ -327,11 +329,17 @@ func neighbors(n *node, queue []*node) <-chan *node {
 
 // TODO move around collidables
 func (b board) findPath(start, dest pair) []pair {
+	step := 30
 	queue := make([]*node, 0)
-	for i := 0; i < b.width/10; i++ {
-		for j := 0; j < b.height/10; j++ {
+	for i := 0; i < b.width/step; i++ {
+		for j := 0; j < b.height/step; j++ {
+			if collides(box{i * step, j * step, 10, 10},
+				toCollidableSlice(Board.collidable),
+				toCollidableSlice(Board.actors)) {
+				continue
+			}
 			n := &node{x: i, y: j, dist: -1}
-			if n.x == start.x/10 && n.y == start.y/10 {
+			if n.x == start.x/step && n.y == start.y/step {
 				n.dist = 0
 			}
 			queue = append(queue, n)
@@ -342,7 +350,7 @@ func (b board) findPath(start, dest pair) []pair {
 		var n *node
 		queue, n = minNode(queue)
 		// TODO remove magic numbers
-		if n.x == dest.x/10 && n.y == dest.y/10 {
+		if n.x == dest.x/step && n.y == dest.y/step {
 			found = n
 			break
 		}
@@ -357,7 +365,7 @@ func (b board) findPath(start, dest pair) []pair {
 	}
 	var path []pair
 	for on := found; on != nil; on = on.up {
-		path = append([]pair{{x: on.x * 10, y: on.y * 10}}, path...)
+		path = append([]pair{{x: on.x * step, y: on.y * step}}, path...)
 	}
 	return path
 }
