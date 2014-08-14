@@ -8,26 +8,27 @@ import (
 )
 
 type sheep struct {
-	id            int
-	x, y          int
-	showX, showY  int
-	destX, destY  int
-	height, width int
-	bounceHeight  int
-	name          string
-	bounceUp      bool
-	state         sheepState
-	proximateSheep     []*sheep
+	id               int
+	x, y             int
+	showX, showY     int
+	destX, destY     int
+	height, width    int
+	bounceHeight     int
+	name             string
+	bounceUp         bool
+	state            sheepState
+	proximateSheep   []*sheep
 	proximateFlowers []*flower
-	talkingTo     *sheep
-	hunger        int
+	talkingTo        *sheep
+	hunger           int
+	path             []pair
 }
 
 type sheepState int
 
 const (
 	thinking sheepState = iota
-	startMoving
+	pickDest
 	moving
 	talking
 	hungry
@@ -38,8 +39,8 @@ func (s sheepState) String() string {
 	switch s {
 	case thinking:
 		str = "thinking"
-	case startMoving:
-		str = "startMoving"
+	case pickDest:
+		str = "pickDest"
 	case moving:
 		str = "moving"
 	case talking:
@@ -74,17 +75,17 @@ func nonColliding(xrange, yrange int) (x int, y int) {
 func newSheep() *sheep {
 	x, y := nonColliding(Board.width-sheepWidth, Board.height-sheepHeight)
 	s := &sheep{
-		id:        sheepId,
-		x:         x,
-		y:         y,
-		height:    sheepHeight,
-		width:     sheepWidth,
-		bounceUp:  true,
-		name:      "Sheepy",
-		state:     thinking,
-		proximateSheep: make([]*sheep, 0),
+		id:               sheepId,
+		x:                x,
+		y:                y,
+		height:           sheepHeight,
+		width:            sheepWidth,
+		bounceUp:         true,
+		name:             "Sheepy",
+		state:            thinking,
+		proximateSheep:   make([]*sheep, 0),
 		proximateFlowers: make([]*flower, 0),
-		hunger:    50,
+		hunger:           50,
 	}
 	sheepId++
 	s.destX = s.x
@@ -101,7 +102,7 @@ func (s *sheep) action() {
 	switch s.state {
 	case thinking:
 		if rand.Intn(25) == 0 {
-			s.state = startMoving
+			s.state = pickDest
 			return
 		}
 		if rand.Intn(15) == 0 {
@@ -122,16 +123,20 @@ func (s *sheep) action() {
 				}
 			}
 		}
-	case startMoving:
-		s.pickDestination()
+	case pickDest:
+		s.path = []pair{s.pickDestination()}
 		s.state = moving
 	case moving:
-		if s.arrived() {
+		if len(s.path) == 0 {
 			s.state = thinking
 			return
 		}
+		if s.arrived(s.path[0]) {
+			s.path = s.path[1:]
+			return
+		}
 		x, y, showX, showY := s.x, s.y, s.showX, s.showY
-		s.walk()
+		s.walk(s.path[0])
 		if collides(s, toCollidableSlice(Board.collidable),
 			toCollidableSlice(Board.actors)) {
 			s.x, s.y, s.showX, s.showY = x, y, showX, showY
@@ -155,6 +160,15 @@ func (s *sheep) action() {
 			s.state = thinking
 			return
 		}
+		for _, n := range Board.noncollidable {
+			if f, ok := n.(*flower); ok {
+				s.path = Board.findPath(pair{s.x, s.y}, pair{f.x, f.y})
+				s.state = moving
+				break
+
+			}
+		}
+
 	}
 }
 
@@ -187,39 +201,32 @@ func findProximateFlowers(s *sheep, objs []object) []*flower {
 	return proximates
 }
 
-
-func (s sheep) arrived() bool {
-	return s.x == s.destX && s.y == s.destY
+func (s sheep) arrived(dest pair) bool {
+	blur := 10
+	return s.x >= dest.x - blur && s.x <= dest.x + blur &&
+		s.y >= dest.y - blur && s.y <= dest.y + blur
 }
 
-func (s *sheep) pickDestination() {
+func (s sheep) pickDestination() pair {
+	p := pair{s.x, s.y}
 	step := 75
-	s.destX += rand.Intn(2*step) - step
-	s.destY += rand.Intn(2*step) - step
-	s.correctBounds()
+	p.x += rand.Intn(2*step) - step
+	p.y += rand.Intn(2*step) - step
+	return s.correctBounds(p)
 }
 
-func (s *sheep) correctBounds() {
-	if s.x >= Board.width-s.width {
-		s.x = Board.width - s.width - 1
-	} else if s.x < 0 {
-		s.x = 0
+func (s sheep) correctBounds(p pair) pair {
+	if p.x >= Board.width-s.width {
+		p.x = Board.width - s.width - 1
+	} else if p.x < 0 {
+		p.x = 0
 	}
-	if s.destX >= Board.width-s.width {
-		s.destX = Board.width - s.width - 1
-	} else if s.destX < 0 {
-		s.destX = 0
+	if p.y >= Board.height-s.height {
+		p.y = Board.height - s.height - 1
+	} else if p.y < 0 {
+		p.y = 0
 	}
-	if s.y >= Board.height-s.height {
-		s.y = Board.height - s.height - 1
-	} else if s.y < 0 {
-		s.y = 0
-	}
-	if s.destY >= Board.height-s.height {
-		s.destY = Board.height - s.height - 1
-	} else if s.destY < 0 {
-		s.destY = 0
-	}
+	return p
 }
 
 func moveTowards(pos, dest, step int) int {
@@ -238,10 +245,10 @@ func moveTowards(pos, dest, step int) int {
 	return pos
 }
 
-func (s *sheep) walk() {
+func (s *sheep) walk(dest pair) {
 	step := 5
-	s.x = moveTowards(s.x, s.destX, step)
-	s.y = moveTowards(s.y, s.destY, step)
+	s.x = moveTowards(s.x, dest.x, step)
+	s.y = moveTowards(s.y, dest.y, step)
 	s.showX = s.x
 	if s.bounceUp {
 		s.showY += 7
@@ -272,4 +279,85 @@ func Rename(id int, name string) {
 		return
 	}
 	s.name = name
+}
+
+type pair struct {
+	x, y int
+}
+
+type node struct {
+	x, y int
+	dist int
+	up   *node
+}
+
+func minNode(queue []*node) ([]*node, *node) {
+	if len(queue) == 0 {
+		return nil, nil
+	}
+	min := 1000000 // TODO: get max int
+	found := false
+	var foundIndex int
+	for i, n := range queue {
+		if n.dist >= 0 && n.dist < min {
+			min = n.dist
+			foundIndex = i
+		}
+	}
+	if !found {
+		return queue[1:], queue[0]
+	}
+	n := queue[foundIndex]
+	return append(queue[:foundIndex], queue[foundIndex+1:]...), n
+}
+
+func neighbors(n *node, queue []*node) <-chan *node {
+	ch := make(chan *node)
+	go func() {
+		defer close(ch)
+		for _, inQ := range queue {
+			if inQ.x >= n.x-1 && inQ.x <= n.x+1 &&
+				inQ.y >= n.y-1 && inQ.y <= n.y+1 {
+				ch <- inQ
+			}
+		}
+	}()
+	return ch
+}
+
+// TODO move around collidables
+func (b board) findPath(start, dest pair) []pair {
+	queue := make([]*node, 0)
+	for i := 0; i < b.width/10; i++ {
+		for j := 0; j < b.height/10; j++ {
+			n := &node{x: i, y: j, dist: -1}
+			if n.x == start.x/10 && n.y == start.y/10 {
+				n.dist = 0
+			}
+			queue = append(queue, n)
+		}
+	}
+	var found *node
+	for len(queue) != 0 {
+		var n *node
+		queue, n = minNode(queue)
+		// TODO remove magic numbers
+		if n.x == dest.x/10 && n.y == dest.y/10 {
+			found = n
+			break
+		}
+
+		for neigh := range neighbors(n, queue) {
+			alt := n.dist + 1
+			if neigh.dist == -1 || alt < neigh.dist {
+				neigh.dist = alt
+				neigh.up = n
+			}
+		}
+	}
+	var path []pair
+	for on := found; on != nil; on = on.up {
+		path = append([]pair{{x: on.x * 10, y: on.y * 10}}, path...)
+	}
+	return path
 }
