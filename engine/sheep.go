@@ -59,9 +59,8 @@ var sheepId int
 
 func nonColliding(xrange, yrange int) (x int, y int) {
 	b := box{rand.Intn(xrange), rand.Intn(yrange), sheepWidth, sheepHeight}
-	collidables := toCollidableSlice(Board.objects)
 	// Pick a new box if there's a collision
-	for collides(b, collidables) {
+	for collides(b, toCollidableSlice(Board.collidable), toCollidableSlice(Board.actors)) {
 		b = box{rand.Intn(xrange), rand.Intn(yrange), sheepWidth, sheepHeight}
 	}
 	return b.x, b.y
@@ -119,7 +118,8 @@ func (s *sheep) action() {
 		}
 		x, y, showX, showY := s.x, s.y, s.showX, s.showY
 		s.walk()
-		if collides(s, toCollidableSlice(Board.objects)) {
+		if collides(s, toCollidableSlice(Board.collidable),
+			toCollidableSlice(Board.actors)) {
 			s.x, s.y, s.showX, s.showY = x, y, showX, showY
 			s.state = thinking
 		}

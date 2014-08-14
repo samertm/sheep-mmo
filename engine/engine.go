@@ -32,7 +32,8 @@ type board struct {
 	// directions.
 	width, height int
 	actors        []actor
-	objects       []object
+	collidable    []object
+	noncollidable []object
 }
 
 const (
@@ -42,10 +43,11 @@ const (
 
 func newBoard() *board {
 	return &board{
-		width:   boardWidth,
-		height:  boardHeight,
-		actors:  make([]actor, 0, 1),
-		objects: make([]object, 0, 1),
+		width:         boardWidth,
+		height:        boardHeight,
+		actors:        make([]actor, 0, 1),
+		collidable:    make([]object, 0, 1),
+		noncollidable: make([]object, 0, 1),
 	}
 }
 
@@ -64,7 +66,7 @@ func (b *board) getSheep(id int) (*sheep, error) {
 
 func init() {
 	Board = newBoard()
-	Board.objects = append(Board.objects, fence{
+	Board.collidable = append(Board.collidable, fence{
 		x:      200,
 		y:      100,
 		width:  50,
@@ -100,7 +102,7 @@ func AddFlower(x, y int) {
 		//log.Printf("Invalid location for flower: %d, %d\n", x, y)
 		return
 	}
-	Board.objects = append(Board.objects, f)
+	Board.noncollidable = append(Board.noncollidable, f)
 }
 
 func toDataerSlice(os interface{}) []dataer {
@@ -134,8 +136,8 @@ func IterDataers(slices ...interface{}) <-chan dataer {
 
 // TODO: Rename to "Messages"?
 func CreateMessages() []message.M {
-	messages := make([]message.M, 0, len(Board.actors)+len(Board.objects))
-	for d := range IterDataers(Board.actors, Board.objects) {
+	messages := make([]message.M, 0, len(Board.actors)+len(Board.collidable)+len(Board.noncollidable))
+	for d := range IterDataers(Board.actors, Board.collidable, Board.noncollidable) {
 		messages = append(messages, mWrapper{data: d.data()})
 	}
 	return messages
@@ -198,18 +200,24 @@ func collision(c0, c1 collidable) bool {
 	return proximate(c0, c1, 0)
 }
 
-func collides(c collidable, cs []collidable) bool {
-	for _, coll := range cs {
-		if collision(c, coll) {
-			return true
+func collides(c collidable, css ...[]collidable) bool {
+	for _, cs := range css {
+		for _, coll := range cs {
+			if c == coll {
+				continue
+			}
+			if collision(c, coll) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 func (b board) collisions(c collidable) bool {
-	return collides(c, toCollidableSlice(b.objects)) ||
-		collides(c, toCollidableSlice(b.actors))
+	return collides(c, toCollidableSlice(b.noncollidable),
+		toCollidableSlice(b.collidable),
+		toCollidableSlice(b.actors))
 }
 
 func Tick() {
