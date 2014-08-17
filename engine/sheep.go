@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -307,7 +308,7 @@ func minNode(queue []*node) ([]*node, *node) {
 	if len(queue) == 0 {
 		return nil, nil
 	}
-	min := 1000000 // TODO: get max int
+	min := math.MaxInt32
 	found := false
 	var foundIndex int
 	for i, n := range queue {
@@ -359,7 +360,6 @@ func (b board) findPath(start, dest pair) []pair {
 	for len(queue) != 0 {
 		var n *node
 		queue, n = minNode(queue)
-		// TODO remove magic numbers
 		if n.x == dest.x/step && n.y == dest.y/step {
 			found = n
 			break
