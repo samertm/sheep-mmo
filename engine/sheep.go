@@ -338,7 +338,6 @@ func neighbors(n *node, queue []*node) <-chan *node {
 	return ch
 }
 
-// TODO move around collidables
 func (b board) findPath(start, dest pair) []pair {
 	step := 30
 	queue := make([]*node, 0)
